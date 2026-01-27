@@ -8,7 +8,7 @@
         - *Profile:* [ ]
 
 **Analysis Guidelines**
-    - **Grammar & Spelling:** Fix all objective errors.
+    - **Grammar & Spelling:** Fix all objective errors. Check for internal consistency (tense, paraller structure).
     - **Word Choice:** Replace weak words with strong, clear alternatives. (e.g., change "very bad" to "critical" or "severe," not "egregious").
     - **Flow:** Ensure logical progression. Fix "clunky" phrasing typical of literal translation.
 
