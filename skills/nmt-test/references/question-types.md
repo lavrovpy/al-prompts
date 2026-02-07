@@ -2,7 +2,7 @@
 
 ## Type 1: Single-Choice (4 options)
 
-**Used by:** History (Q1-20), Ukrainian Language (Q1-10)
+**Used by:** History (Q1-20), Ukrainian Language (Q1-10), Biology (Q1-24), Physics (Q1-12)
 
 **Format:**
 - Question stem (text, quote, or visual source description)
@@ -41,7 +41,7 @@
 
 ## Type 3: Matching (4 items → 5 options)
 
-**Used by:** History (Q21-24), Ukrainian Language (Q26-30)
+**Used by:** History (Q21-24), Ukrainian Language (Q26-30), Biology (Q25-28), Physics (Q13-14)
 
 **Format:**
 - Left column: 4 numbered items (1, 2, 3, 4)
@@ -54,6 +54,8 @@
 ### Content Patterns
 - **History:** document↔name, person↔organization, event↔consequence
 - **Language:** sentence↔phraseologism, word↔part of speech, sentence↔punctuation rule, sentence↔sentence type
+- **Biology:** molecule↔function, pathogen↔disease, organism↔habitat, structure↔diagram label
+- **Physics:** phenomenon↔application, discovery↔experiment
 
 ---
 
@@ -123,7 +125,7 @@
 
 ## Type 7: Numerical Answer (open-ended)
 
-**Used by:** Mathematics (Q19-22)
+**Used by:** Mathematics (Q19-22), Physics (Q15-20)
 
 **Format:**
 - Problem requiring computation
@@ -136,4 +138,29 @@
 - Answers should be "clean" numbers (integers or simple decimals)
 - Increasing difficulty progression
 - Provide graphs/diagrams (described textually) where needed
-- Topics: integration, applied math, 3D geometry, equations with parameters
+- **Math topics:** integration, applied math, 3D geometry, equations with parameters
+- **Physics topics:** kinematics, statics, thermodynamics, circuits, oscillations, nuclear decay
+- Physics: always specify answer units in the question ("Відповідь запишіть у [units]")
+
+---
+
+## Type 8: Three-Column Select
+
+**Used by:** Biology (Q29-30)
+
+**Format:**
+- 3 independent columns, each with 3 numbered options (1, 2, 3)
+- Student selects one option from each column
+- Answer: 3-digit number (one digit per column, left to right)
+
+**Scoring:**
+- 3 pts: all 3 correct
+- 2 pts: 2 correct
+- 1 pt: 1 correct
+- 0 pts: none correct
+
+### Design Requirements
+- Each column represents a different attribute of a single concept (e.g., body covering / circulatory system / representative)
+- Columns are independent — correctness of one doesn't depend on others
+- All 3 options per column must be plausible
+- Common patterns: organism classification (trait, system feature, species example), process characterization (statement, substance class, location)

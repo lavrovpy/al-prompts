@@ -1,6 +1,6 @@
 ---
 name: nmt-test
-description: Generate complete NMT (Національний мультипредметний тест) standardized educational assessment tests following the official Ukrainian exam format. Use when the user wants to create NMT practice tests, exam papers, or standardized assessments. Supports multiple disciplines with discipline-specific structures: history (Історія України), mathematics (Математика), Ukrainian language (Українська мова), and other subjects by analogy. Each discipline has its own question types, scoring, and quantity — read the corresponding example file before generating.
+description: Generate complete NMT (Національний мультипредметний тест) standardized educational assessment tests following the official Ukrainian exam format. Use when the user wants to create NMT practice tests, exam papers, or standardized assessments. Supports multiple disciplines with discipline-specific structures: history (Історія України), mathematics (Математика), Ukrainian language (Українська мова), biology (Біологія), physics (Фізика), and other subjects by analogy. Each discipline has its own question types, scoring, and quantity — read the corresponding example file before generating.
 ---
 
 # NMT Test Generator
@@ -27,9 +27,11 @@ include_answer_key: true
 - **History** → [examples/history.md](examples/history.md) — 30 questions, 54 pts max
 - **Mathematics** → [examples/math.md](examples/math.md) — 22 questions, 32 pts max
 - **Ukrainian Language** → [examples/ukrainian-language.md](examples/ukrainian-language.md) — 30 questions, 45 pts max
+- **Biology** → [examples/biology.md](examples/biology.md) — 30 questions, 46 pts max
+- **Physics** → [examples/physics.md](examples/physics.md) — 20 questions, 32 pts max
 
 For disciplines without a dedicated example file, use the closest analogue:
-- Biology, Chemistry, Physics → adapt the **math** structure (single-choice/5opt + matching + numerical)
+- Chemistry → adapt the **biology** structure (single-choice/4opt + matching + three-column select)
 - Geography, Law, other humanities → adapt the **history** structure (single-choice/4opt + matching + sequencing + multi-select)
 - English, other languages → adapt the **ukrainian-language** structure
 
