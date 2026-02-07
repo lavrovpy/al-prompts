@@ -1,92 +1,139 @@
 # Question Type Specifications
 
-## Type 1: Single-Choice Questions
+## Type 1: Single-Choice (4 options)
+
+**Used by:** History (Q1-20), Ukrainian Language (Q1-10)
 
 **Format:**
-- Present a problem, scenario, or concept
-- Exactly 4 answer options labeled А, Б, В, Г (or A, B, C, D based on config)
+- Question stem (text, quote, or visual source description)
+- Exactly 4 options labeled А, Б, В, Г
 - Only ONE correct option
-- Distractors should be plausible and based on common misconceptions
 
-### Cognitive Levels to Cover
-
-1. **Conceptual Understanding** (3-4 questions): Principles, definitions, when/how concepts apply
-   - "In which situation can [object] be considered as [simplified model]?"
-   - "Which statement correctly describes [phenomenon]?"
-
-2. **Graph/Diagram Interpretation** (2-3 questions): Reading and interpreting visual information
-   - Include a graph or diagram
-   - Ask to identify which curve/point represents a specific process or condition
-
-3. **Calculation-Based** (3-4 questions): Numerical computation
-   - Provide all necessary numerical data
-   - All options should have correct units
-   - Distractors should result from common calculation errors
-
-4. **Application/Analysis** (2-3 questions): Real-world or novel scenarios
-   - Require multi-step reasoning
-   - Test ability to connect multiple concepts
-
-### Distractor Design Principles
-
-- One distractor: correct formula but wrong substitution
-- One distractor: wrong formula but plausible result
-- One distractor: common conceptual misconception
-- Distractors should be similar length and structure to the correct answer
+### Distractor Design
+- Plausible alternatives from the same domain/era/category
+- Common student misconceptions
+- Options should be parallel in structure and length
+- Avoid "all of the above" or "none of the above"
 
 ---
 
-## Type 2: Matching Questions
+## Type 2: Single-Choice (5 options)
+
+**Used by:** Mathematics (Q1-15), Ukrainian Language (Q11-25)
+
+**Format:**
+- Question stem with problem or scenario
+- Exactly 5 options labeled А, Б, В, Г, Д
+- Only ONE correct option
+
+### Math-Specific Distractor Design
+- One distractor: correct method, arithmetic error
+- One distractor: wrong formula, plausible result
+- One distractor: partial solution (incomplete steps)
+- One distractor: sign error or unit confusion
+
+### Language-Specific Distractor Design
+- Options represent common grammatical errors students make
+- Each option must be a complete, syntactically valid alternative
+- For gap-fill: all options must fit grammatically into the sentence frame
+
+---
+
+## Type 3: Matching (4 items → 5 options)
+
+**Used by:** History (Q21-24), Ukrainian Language (Q26-30)
 
 **Format:**
 - Left column: 4 numbered items (1, 2, 3, 4)
-- Right column: 5 lettered options (А, Б, В, Г, Д / A, B, C, D, E)
-- Each numbered item matches exactly ONE lettered option
-- One lettered option remains unused (distractor)
+- Right column: 5 lettered options (А, Б, В, Г, Д)
+- Each numbered item matches exactly ONE option
+- One option remains unused (distractor)
 
 **Scoring:** 1 point per correct match, max 4 per question.
 
-### Content Types
-
-1. **Concept-to-Application:** Phenomena/laws → Real-world applications
-2. **Discovery-to-Evidence:** Theories → Experiments/observations
-3. **Term-to-Definition:** Technical terms → Definitions/properties
-4. **Process-to-Outcome:** Processes → Results/products
-
-### Design Requirements
-
-- Items in each column from the same general topic area
-- Unused option should be plausible but clearly not matching
-- Avoid options that could reasonably match multiple items
+### Content Patterns
+- **History:** document↔name, person↔organization, event↔consequence
+- **Language:** sentence↔phraseologism, word↔part of speech, sentence↔punctuation rule, sentence↔sentence type
 
 ---
 
-## Type 3: Short Numerical Answer Questions
+## Type 4: Matching (3 items → 5 options)
+
+**Used by:** Mathematics (Q16-18)
 
 **Format:**
-- Problem requiring calculation
-- Student provides numerical answer as a decimal
-- Specify unit of measurement in the question
-- Answer should be a clean number (integer or simple decimal)
+- Left column: 3 numbered items (1, 2, 3)
+- Right column: 5 lettered options (А, Б, В, Г, Д)
+- Each item matches exactly ONE option
+- Two options remain unused (distractors)
 
-### Complexity Progression
+**Scoring:** 1 point per correct match, max 3 per question.
 
-- Questions 15-16: Single-concept (1-2 step calculations)
-- Questions 17-18: Multi-concept (2-3 step calculations)
-- Questions 19-20: Complex (3+ steps, combining multiple topics)
+### Content Patterns
+- Function↔graph sketch
+- Mathematical question↔numerical answer
+- Geometric transformation↔diagram
 
-### Problem Types
+---
 
-1. Kinematics/Motion: time, distance, velocity, acceleration
-2. Equilibrium: balance of forces, moments, quantities
-3. Energy/Thermodynamics: heat transfer, efficiency, conservation
-4. Circuit analysis: resistance, current, voltage
-5. Wave/Oscillation: frequency, wavelength, period
-6. Decay/Growth: exponential processes, half-life
+## Type 5: Chronological Sequencing
+
+**Used by:** History (Q25-27)
+
+**Format:**
+- 4 events/excerpts labeled А, Б, В, Г
+- Student orders them chronologically: 1 (earliest) to 4 (latest)
+- Answer: sequence of letters (e.g., "ВАГБ")
+
+**Scoring:**
+- 3 pts: all 4 positions correct
+- 2 pts: 3 positions correct
+- 1 pt: 2 positions correct
+- 0 pts: fewer than 2 correct
 
 ### Design Requirements
+- Events must be clearly datable — no ambiguous chronology
+- All events from the same broad era/theme
+- Minimum ~5 years between adjacent events to avoid ambiguity
+- Can use event descriptions OR primary source excerpts
 
-- "Clean" numbers to avoid calculator dependency
-- Include diagrams where spatial relationships matter
-- Specify simplifying assumptions (e.g., "ignore air resistance")
-- Provide necessary constants or reference data
+---
+
+## Type 6: Multi-Select (3 from 7)
+
+**Used by:** History (Q28-30)
+
+**Format:**
+- 7 numbered statements (1-7) about a single topic
+- Exactly 3 are correct
+- Student selects the 3 correct numbers
+
+**Scoring:**
+- 3 pts: all 3 correct
+- 2 pts: 2 correct (no incorrect selected)
+- 1 pt: 1 correct (no incorrect selected)
+- 0 pts: none correct
+
+### Design Requirements
+- All 7 statements about the same topic/event/phenomenon
+- Incorrect statements should be plausible: anachronisms, attributes of related events, exaggerations
+- Correct statements should not be trivially obvious
+
+---
+
+## Type 7: Numerical Answer (open-ended)
+
+**Used by:** Mathematics (Q19-22)
+
+**Format:**
+- Problem requiring computation
+- Answer: decimal number (using comma as decimal separator)
+- Answer box: `___,___`
+
+**Scoring:** 0 or 2 points per question.
+
+### Design Requirements
+- Answers should be "clean" numbers (integers or simple decimals)
+- Increasing difficulty progression
+- Provide graphs/diagrams (described textually) where needed
+- Topics: integration, applied math, 3D geometry, equations with parameters

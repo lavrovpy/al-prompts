@@ -1,122 +1,150 @@
 # Output Format & Structure
 
-## Template
+## General Template
 
 ```markdown
-# [DISCIPLINE] TEST
-## [Test Name/Code] - [Year]
+# [DISCIPLINE] — НМТ [Year]
+## Демонстраційний варіант
 
 ---
 
-### Questions 1-12: Single Choice
-*Select ONE correct answer from four options.*
+### [Section Instruction Banner]
+*Bolded instruction text matching the section type*
 
 **1.** [Question text]
+[Options]
 
-А [Option A]
-Б [Option B]
-В [Option C]
-Г [Option D]
-
-[Continue for questions 2-12]
+...
 
 ---
 
-### Questions 13-14: Matching
-*Match each numbered item (1-4) with ONE lettered option (А-Д).*
-
-**13.** [Matching instruction]
-
-| # | Items | | Letter | Options |
-|---|-------|---|--------|---------|
-| 1 | [Item 1] | | А | [Option A] |
-| 2 | [Item 2] | | Б | [Option B] |
-| 3 | [Item 3] | | В | [Option C] |
-| 4 | [Item 4] | | Г | [Option D] |
-| | | | Д | [Option E] |
-
-[Continue for question 14]
+## Довідкові матеріали
+[Reference materials if applicable]
 
 ---
 
-### Questions 15-20: Numerical Answer
-*Calculate and write your answer as a decimal number.*
+## Відповіді
 
-**15.** [Problem text with all data]
-
-Write your answer in [units].
-
-Answer: _______
-
-[Continue for questions 16-20]
-
----
-
-## Reference Materials
-[Include relevant tables, constants, and formulas]
-
----
-
-## Answer Key
-
-| Question | Answer |
-|----------|--------|
-| 1 | [Letter] |
-| ... | ... |
-| 13 | 1-[L], 2-[L], 3-[L], 4-[L] |
-| 15 | [Number] |
+| Номер завдання | Правильна відповідь |
+|----------------|---------------------|
+| 1 | [Answer] |
 | ... | ... |
 ```
 
-## Diagram and Graph Requirements
+## Section Instruction Banners
 
-- Clear, professional formatting
-- Label all axes, units, and important points
-- Use consistent notation throughout the test
-- Diagrams must be essential to answering (not decorative)
+Each section starts with its official instruction in bold. Use the exact wording from examples:
 
-## Reference Sheet Contents
+**Single-choice (4 options):**
+> *Завдання 1–N мають по чотири варіанти відповіді, з яких лише один правильний. Виберіть правильний, на Вашу думку, варіант відповіді й позначте його.*
 
-Include:
-- Unit conversion prefixes (peta to femto)
-- Fundamental constants relevant to the discipline
-- Common formulas or tables (e.g., trigonometric values)
-- Discipline-specific reference data
+**Single-choice (5 options):**
+> *Завдання N–M мають по п'ять варіантів відповіді, з яких лише один правильний. Виберіть правильний варіант відповіді й позначте його.*
 
-## Discipline Adaptation
+**Matching (4→5):**
+> *У завданнях N–M до кожного з чотирьох фрагментів інформації, позначених цифрою, доберіть один правильний, на Вашу думку, варіант, позначений буквою.*
 
-**Sciences (Physics, Chemistry, Biology):**
-- Emphasize calculation problems and experimental scenarios
-- Include data interpretation from graphs
-- Reference materials: constants, periodic table, formulas
+**Matching (3→5):**
+> *У завданнях N–M до кожного з трьох рядків інформації, позначених цифрами, доберіть один правильний, на Вашу думку, варіант, позначений буквою.*
 
-**Mathematics:**
-- Replace conceptual questions with proof-based or theorem application
-- Numerical answers may include expressions (e.g., "√2")
-- Include coordinate geometry and function analysis
+**Chronological sequencing:**
+> *У завданнях N–M розташуйте події в хронологічній послідовності. Цифрі 1 має відповідати вибрана Вами перша подія, цифрі 2 – друга, цифрі 3 – третя, цифрі 4 – четверта.*
 
-**Social Sciences (History, Geography, Economics):**
-- Replace calculations with document/source analysis
-- Matching: events↔dates, figures↔achievements, terms↔definitions
-- Short answer: specific facts, dates, brief explanations
+**Multi-select (3 from 7):**
+> *Завдання N–M мають по сім варіантів відповідей, з яких лише три правильні. Виберіть і запишіть три цифри, що позначають правильні, на Вашу думку, відповіді.*
 
-**Languages:**
-- Grammar and vocabulary in single-choice
-- Text-element matching for reading comprehension
-- Short answer: translations, word forms, brief compositions
+**Numerical answer:**
+> *Розв'яжіть завдання N–M. Одержані числові відповіді запишіть у спеціально відведеному місці. Відповідь записуйте лише десятковим дробом, урахувавши положення коми.*
 
-## Example Question Patterns
+## Question Formatting
 
 ### Single-Choice
+```
+**1.** Question text here
 
-**Conceptual:** "Under what conditions can [X] be modeled as [Y]?"
-**Calculation:** "A [object] with [property = value] undergoes [process]. Calculate [quantity]."
-**Graph:** "The graph shows [relationship]. Identify the curve representing [specific case]."
+А Option A text
+Б Option B text
+В Option C text
+Г Option D text
+```
 
 ### Matching
+```
+**21.** Instruction text.
 
-"Match each [concept type] (1-4) with its [application/example] (A-E)."
+| | Items | | | Options |
+|---|-------|---|---|---------|
+| 1 | Item text | | А | Option A text |
+| 2 | Item text | | Б | Option B text |
+| 3 | Item text | | В | Option C text |
+| 4 | Item text | | Г | Option D text |
+| | | | Д | Option E text |
+```
 
-### Numerical
+### Chronological Sequencing
+```
+**25.** Установіть послідовність [topic].
 
-"[Scenario]. Calculate [quantity]. Express your answer in [units]."
+А [Event A]
+Б [Event B]
+В [Event C]
+Г [Event D]
+```
+
+### Multi-Select
+```
+**28.** Question text.
+
+1 Statement 1
+2 Statement 2
+3 Statement 3
+4 Statement 4
+5 Statement 5
+6 Statement 6
+7 Statement 7
+```
+
+### Numerical Answer
+```
+**19.** Problem text.
+[Description of graph/diagram if applicable]
+
+Відповідь: _______
+```
+
+## Answer Key Formatting
+
+### Simple answers
+| Номер завдання | Правильна відповідь |
+|----------------|---------------------|
+| 1 | В |
+
+### Matching answers
+| 21 | 1–Б, 2–А, 3–В, 4–Д |
+
+### Sequencing answers
+| 25 | ВАГБ |
+
+### Multi-select answers
+| 28 | 1, 2, 4 |
+
+### Numerical answers
+| 19 | 38,5 |
+
+## Visual Sources
+
+Since AI cannot embed images, describe visual sources textually in brackets:
+
+- Maps: `[Карта: територія Правобережної України, XVII ст., з позначенням основних міст]`
+- Photos: `[Фото: будівля Верховної Ради України]`
+- Graphs: `[Графік: залежність температури від часу, зростання з 12°C до 18°C]`
+- Portraits: `[Портрет: історичний діяч у військовому мундирі]`
+- Posters: `[Плакат: радянський агітаційний плакат часів індустріалізації]`
+
+## Reference Materials (Math/Sciences only)
+
+Include a "Довідкові матеріали" section with:
+- Relevant formulas and identities
+- Tables (squares, trigonometric values)
+- Constants and conversion factors
+- Geometry reference (area, volume formulas with diagrams)

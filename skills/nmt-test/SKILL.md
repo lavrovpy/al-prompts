@@ -1,67 +1,89 @@
 ---
 name: nmt-test
-description: Generate complete standardized educational assessment tests with single-choice, matching, and numerical answer questions. Use when the user wants to create exam papers, practice tests, or standardized assessments for any discipline (physics, chemistry, math, history, languages, etc.).
+description: Generate complete NMT (Національний мультипредметний тест) standardized educational assessment tests following the official Ukrainian exam format. Use when the user wants to create NMT practice tests, exam papers, or standardized assessments. Supports multiple disciplines with discipline-specific structures: history (Історія України), mathematics (Математика), Ukrainian language (Українська мова), and other subjects by analogy. Each discipline has its own question types, scoring, and quantity — read the corresponding example file before generating.
 ---
 
-# Educational Assessment Question Generator
+# NMT Test Generator
 
-Generate high-quality standardized test questions. Output as a single self-contained artifact/canvas in Markdown.
+Generate high-quality NMT (Національний мультипредметний тест) practice tests following the official Ukrainian standardized exam format. Output as a single self-contained artifact/canvas in Markdown.
 
-## User Configuration
+## Step 1: Determine Discipline & Configuration
 
-Accept these settings from the user (defaults shown):
+Ask the user or infer from context:
 
 ```yaml
-output_format: "artifacts"        # "artifacts" | "canvas"
-language: "ukrainian"             # any language
-answer_labels: "latin"            # "cyrillic" (А,Б,В,Г) | "latin" (A,B,C,D)
-discipline: "physics"             # subject area
-topic: "general"                  # specific topic or "general"
-difficulty: "standard"            # "easy" | "standard" | "advanced"
-single_choice_count: 12
-matching_count: 2
-numerical_count: 6
-include_diagrams: true
-include_reference_sheet: true
+discipline: ""              # REQUIRED: history | math | ukrainian-language | biology | chemistry | physics | geography | other
+topic: "general"            # specific topic or "general" for full coverage
+language: "ukrainian"       # output language
+answer_labels: "cyrillic"   # "cyrillic" (А,Б,В,Г,Д) | "latin" (A,B,C,D,E)
+difficulty: "standard"      # "easy" | "standard" | "advanced"
 include_answer_key: true
 ```
 
-## Test Structure
+## Step 2: Load Discipline-Specific Structure
 
-| Type | Default Qty | Points per Q | Total |
-|------|------------|-------------|-------|
-| Single-choice (4 options) | 12 | 0 or 1 | 12 |
-| Matching (4 items → 5 options) | 2 | 0-4 | 8 |
-| Short numerical answer | 6 | 0 or 2 | 12 |
-| **TOTAL** | **20** | — | **32** |
+**Before generating any questions**, read the corresponding example file from `examples/` to understand the exact test structure, question types, scoring, and format for that discipline:
 
-## Question Type Specifications
+- **History** → [examples/history.md](examples/history.md) — 30 questions, 54 pts max
+- **Mathematics** → [examples/math.md](examples/math.md) — 22 questions, 32 pts max
+- **Ukrainian Language** → [examples/ukrainian-language.md](examples/ukrainian-language.md) — 30 questions, 45 pts max
 
-For detailed specs on each question type, see:
-- [references/question-types.md](references/question-types.md) — format, cognitive levels, distractor design, scoring
-- [references/output-format.md](references/output-format.md) — output structure template and discipline adaptation guide
+For disciplines without a dedicated example file, use the closest analogue:
+- Biology, Chemistry, Physics → adapt the **math** structure (single-choice/5opt + matching + numerical)
+- Geography, Law, other humanities → adapt the **history** structure (single-choice/4opt + matching + sequencing + multi-select)
+- English, other languages → adapt the **ukrainian-language** structure
 
-## General Guidelines
+Each example file contains:
+1. Test overview (total questions, max score)
+2. Question types table with exact quantities, option counts, and scoring
+3. Section-by-section format with real NMT example questions
+4. Design notes for question and distractor construction
+
+## Step 3: Generate Questions
+
+Follow the structure and question types from the loaded example file exactly. Key rules:
 
 ### Difficulty Distribution
 - Easy (direct recall/application): 20-25%
 - Medium (understanding + reasoning): 50-60%
 - Difficult (multi-step, combining concepts): 20-25%
 
-### Language and Clarity
-- Precise, unambiguous language
-- Define symbols/abbreviations on first use
-- Avoid double negatives
+### Universal Quality Rules
+- Precise, unambiguous language in Ukrainian
 - Each question tests ONE main concept or skill
+- Avoid double negatives
+- Distractors must be plausible — based on real misconceptions, not absurd options
+- Options should be similar in length and structure
+- Cover the required curriculum breadth across questions
 
-### Quality Checklist
-Before finalizing, verify:
-- All questions complete and properly numbered
-- Each single-choice has exactly 4 options with 1 correct
-- Each matching has 4 items and 5 options
-- All numerical answers achievable with given data
-- Units specified for all physical quantities
-- Diagrams/graphs clear and properly labeled
-- Content covers required curriculum areas
-- Answer key is complete and accurate
-- Reference materials include all necessary data
+### Discipline-Specific Rules
+
+**Sciences/Math:** Include diagrams described textually (e.g., "[Графік: парабола y=x² з вершиною в точці (0,0)]"). Provide reference materials section with formulas and constants.
+
+**History/Humanities:** Use primary source excerpts (quotes, documents). Describe visual sources textually (e.g., "[Фото: будівля Верховної Ради]", "[Карта: територія Гетьманщини]"). Cover the full chronological span.
+
+**Languages:** Include shared text passages for text-based questions. Test real grammatical pitfalls students commonly encounter.
+
+## Step 4: Format Output
+
+For detailed output formatting, see:
+- [references/output-format.md](references/output-format.md) — output template and formatting guide
+- [references/question-types.md](references/question-types.md) — cognitive levels and distractor design
+
+### Output Structure
+```
+# [DISCIPLINE] — НМТ [Year]
+## Демонстраційний варіант
+
+[Section instruction banner for each section]
+
+[Questions numbered sequentially]
+
+---
+## Довідкові матеріали (if applicable)
+[Reference sheet for math/science]
+
+---
+## Відповіді
+[Answer key table]
+```
