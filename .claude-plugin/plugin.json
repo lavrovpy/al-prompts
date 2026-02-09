@@ -1,5 +1,0 @@
-{
-  "name": "alavreniuk-skills",
-  "description": "Collection of reusable prompts and skills for Claude Code",
-  "skills": "./skills/"
-}
