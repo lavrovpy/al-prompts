@@ -1,0 +1,29 @@
+{
+  "name": "alavreniuk-skills",
+  "owner": {
+    "name": "Andrii Lavreniuk",
+    "email": "alo.andretti@gmail.com"
+  },
+  "metadata": {
+    "description": "Collection of language learning, translation, writing, and interview preparation skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "alavreniuk-skills",
+      "description": "Collection of language learning, translation, writing, interview preparation, and education skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/duolingo-at-home",
+        "./skills/editor",
+        "./skills/interview-coach",
+        "./skills/interview-questions-creator",
+        "./skills/nmt-test",
+        "./skills/notes-verification",
+        "./skills/quick-grammar-check",
+        "./skills/translator-en-ukr"
+      ]
+    }
+  ]
+}
