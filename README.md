@@ -3,7 +3,7 @@ A personal library of AI prompts and [Agent Skills](https://agentskills.io/speci
 Each tool in this repo is available in **two forms**:
 
 - **Prompts** (`prompts/`) — standalone system prompts you can copy-paste into any AI chat (ChatGPT, Claude, etc.). They follow a two-step **Prompt Priming** approach: the assistant first acknowledges the instructions and asks for input, then processes it using the specified format.
-- **Skills** (`skills/`) — the same tools packaged as [Agent Skills](https://agentskills.io/specification) (each containing a `SKILL.md` file), installable in multiple agent tools.
+- **Skills** (`skills/`) — the same tools packaged as [Agent Skills](https://agentskills.io/specification) (each containing a `SKILL.md` file), installable in agent tools.
 
 ## Installing Skills
 
@@ -57,6 +57,8 @@ If you want to use skills with another tool, check that tool's documentation.
   - Example: Provide an interview question and your answer; get a score, strengths, and improvement hints.
 - `prompts/interview-questions-creator.md`: FAANG-style interviewer that generates high-signal questions from provided materials.
   - Example: Attach a design doc or study notes; receive 5-7 deep-dive questions.
+- `prompts/interview-scorecard.md`: Technical recruiter assistant that turns raw interview notes into a structured internal scorecard with hiring recommendation.
+  - Example: Paste shorthand interview notes; get objective sections for strengths, gaps, seniority, and pass/fail decision.
 - `prompts/notes-verification-assistant.md`: Academic verifier that audits notes for accuracy and rewrites them for study.
   - Example: Paste study notes; get an audit and a revised, high-density version.
 - `prompts/translator-en-ukr.md`: English ↔ Ukrainian translator with nuance and context handling.
