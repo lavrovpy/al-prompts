@@ -1,0 +1,23 @@
+{
+  "skill_name": "foreign-language-a2-tutor",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to practice French. Let me start: Je m'appelle Pierre. Je suis... um... I work with computers. What do I say?",
+      "expected_output": "Tutor responds in simple French, gently provides the correct phrase, asks a follow-up question, introduces one new word/phrase naturally",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Ayer fui al parque. Era muy bonito. Había muchas... how do you say 'birds' in Spanish? Quiero aprender.",
+      "expected_output": "Tutor responds in Spanish, provides the word for birds, continues the conversation naturally, keeps it simple and encouraging",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Ich mag Kaffee, aber ich trinke nicht viel Zucker. Is that right? How do I say this better?",
+      "expected_output": "Tutor responds in German, gently corrects the phrase about sugar, models natural phrasing, keeps sentences short and simple",
+      "files": []
+    }
+  ]
+}
