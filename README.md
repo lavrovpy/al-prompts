@@ -67,5 +67,7 @@ If you want to use skills with another tool, check that tool's documentation.
   - Example: Start a conversation in your target language at A2 level; get casual, immersive practice.
 - `prompts/quick-grammar-check.md`: Fast grammar, spelling, and consistency check.
   - Example: Paste a sentence; get "Correct." or a fix with a brief explanation.
+- `prompts/codebase-study-plan.md`: Senior architect-led codebase audit and tailored study roadmap to get productive in a specific repository and stack.
+  - Example: Point it at your repo; get an evidence-based audit with code anchors and a week-by-week learning plan tied to real examples in the codebase.
 - `prompts/experimental/nmt-test.md`: Educational assessment question generator for standardized exam prep (Ukrainian NMT).
   - Example: Specify a subject and topic; get well-structured multiple-choice or open-ended questions.
