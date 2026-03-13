@@ -1,0 +1,163 @@
+<svg width="100%" viewBox="0 0 680 720" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<!-- Separate markers per arrow color — never use context-stroke -->
+<marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#993C1D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+
+<!-- All classes defined inline — no external CSS dependency -->
+<style>
+  .th { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; font-weight: 600; }
+  .ts { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; font-weight: 400; }
+
+  .c-teal rect  { fill: #E8F5F0; stroke: #0F6E56; }
+  .c-teal text  { fill: #0F6E56; }
+
+  .c-coral rect { fill: #FDF0EB; stroke: #993C1D; }
+  .c-coral text { fill: #993C1D; }
+
+  .c-red rect   { fill: #FDECEB; stroke: #C0392B; }
+  .c-red text   { fill: #993C1D; }
+
+  .c-green rect { fill: #E4F7E8; stroke: #0F6E56; }
+  .c-green text { fill: #0F6E56; }
+
+  .c-amber rect { fill: #FEF5E7; stroke: #B7791F; }
+  .c-amber text { fill: #92610A; }
+</style>
+
+<!-- Title — explicit fill since not inside a styled group -->
+<text class="th" x="340" y="36" text-anchor="middle" fill="#1A1A1A" style="font-size:18px">Context pollution</text>
+<text class="ts" x="340" y="56" text-anchor="middle" fill="#555">Irrelevant, redundant, or conflicting information that degrades AI reasoning</text>
+
+<!-- LEFT: Clean context container -->
+<g class="c-teal">
+<rect x="40" y="90" width="280" height="260" rx="14" stroke-width="0.5"/>
+<text class="th" x="180" y="118" text-anchor="middle">Clean context</text>
+</g>
+
+<!-- Clean context items — text y = rect_y + height/2 = rect_y + 16 -->
+<g class="c-teal">
+<rect x="64" y="136" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="180" y="152" text-anchor="middle" dominant-baseline="central">Task description</text>
+</g>
+<g class="c-teal">
+<rect x="64" y="178" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="180" y="194" text-anchor="middle" dominant-baseline="central">Relevant source files</text>
+</g>
+<g class="c-teal">
+<rect x="64" y="220" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="180" y="236" text-anchor="middle" dominant-baseline="central">Active rules and constraints</text>
+</g>
+<g class="c-teal">
+<rect x="64" y="262" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="180" y="278" text-anchor="middle" dominant-baseline="central">Error logs / test output</text>
+</g>
+
+<!-- Arrow with explicit marker reference -->
+<line x1="180" y1="350" x2="180" y2="386" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#arrow-teal)"/>
+
+<!-- Clean result — text y = 390 + 44/2 = 412 -->
+<g class="c-green">
+<rect x="90" y="390" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="180" y="412" text-anchor="middle" dominant-baseline="central">Focused, accurate output</text>
+</g>
+
+<!-- RIGHT: Polluted context container -->
+<g class="c-coral">
+<rect x="360" y="90" width="280" height="260" rx="14" stroke-width="0.5"/>
+<text class="th" x="500" y="118" text-anchor="middle">Polluted context</text>
+</g>
+
+<!-- Polluted context items -->
+<g class="c-teal">
+<rect x="384" y="136" width="110" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="439" y="152" text-anchor="middle" dominant-baseline="central">Task desc.</text>
+</g>
+<g class="c-red">
+<rect x="504" y="136" width="112" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="560" y="152" text-anchor="middle" dominant-baseline="central">Stale rules</text>
+</g>
+<g class="c-red">
+<rect x="384" y="178" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="500" y="194" text-anchor="middle" dominant-baseline="central">Entire repo dumped as context</text>
+</g>
+<g class="c-red">
+<rect x="384" y="220" width="130" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="449" y="236" text-anchor="middle" dominant-baseline="central">Rejected ideas</text>
+</g>
+<g class="c-teal">
+<rect x="524" y="220" width="92" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="570" y="236" text-anchor="middle" dominant-baseline="central">Error logs</text>
+</g>
+<g class="c-red">
+<rect x="384" y="262" width="232" height="32" rx="6" stroke-width="0.5"/>
+<text class="ts" x="500" y="278" text-anchor="middle" dominant-baseline="central">Conflicting instructions</text>
+</g>
+
+<line x1="500" y1="350" x2="500" y2="386" stroke="#993C1D" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+<!-- Polluted result -->
+<g class="c-red">
+<rect x="400" y="390" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="500" y="412" text-anchor="middle" dominant-baseline="central">Confused, degraded output</text>
+</g>
+
+<!-- Divider — explicit color, no var() -->
+<line x1="40" y1="460" x2="640" y2="460" stroke="#999" stroke-width="0.5" opacity="0.4"/>
+
+<!-- Stats section -->
+<text class="th" x="340" y="490" text-anchor="middle" fill="#1A1A1A">Research findings</text>
+
+<!-- Stat boxes — 3-line group centered: midpoint of y=526..564 = 545 = box center -->
+<g class="c-amber">
+<rect x="40" y="510" width="186" height="70" rx="10" stroke-width="0.5"/>
+<text class="th" x="133" y="526" text-anchor="middle" dominant-baseline="central" style="font-size:18px">-23%</text>
+<text class="ts" x="133" y="550" text-anchor="middle" dominant-baseline="central">accuracy with just 10%</text>
+<text class="ts" x="133" y="564" text-anchor="middle" dominant-baseline="central">irrelevant content</text>
+</g>
+
+<g class="c-amber">
+<rect x="246" y="510" width="188" height="70" rx="10" stroke-width="0.5"/>
+<text class="th" x="340" y="526" text-anchor="middle" dominant-baseline="central" style="font-size:18px">-39%</text>
+<text class="ts" x="340" y="550" text-anchor="middle" dominant-baseline="central">avg. multi-turn</text>
+<text class="ts" x="340" y="564" text-anchor="middle" dominant-baseline="central">performance drop</text>
+</g>
+
+<g class="c-amber">
+<rect x="454" y="510" width="186" height="70" rx="10" stroke-width="0.5"/>
+<text class="th" x="547" y="526" text-anchor="middle" dominant-baseline="central" style="font-size:18px">100+</text>
+<text class="ts" x="547" y="550" text-anchor="middle" dominant-baseline="central">tools cause context</text>
+<text class="ts" x="547" y="564" text-anchor="middle" dominant-baseline="central">confusion in agents</text>
+</g>
+
+<line x1="40" y1="604" x2="640" y2="604" stroke="#999" stroke-width="0.5" opacity="0.4"/>
+
+<!-- Solutions — 2-line group centered: midpoint of y=666..682 = 674 = box center -->
+<text class="th" x="340" y="634" text-anchor="middle" fill="#1A1A1A">How to prevent</text>
+
+<g class="c-teal">
+<rect x="40" y="652" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="110" y="666" text-anchor="middle" dominant-baseline="central">Scope context</text>
+<text class="ts" x="110" y="682" text-anchor="middle" dominant-baseline="central">@ specific files</text>
+</g>
+
+<g class="c-teal">
+<rect x="196" y="652" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="266" y="666" text-anchor="middle" dominant-baseline="central">Start fresh</text>
+<text class="ts" x="266" y="682" text-anchor="middle" dominant-baseline="central">New chat on drift</text>
+</g>
+
+<g class="c-teal">
+<rect x="352" y="652" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="422" y="666" text-anchor="middle" dominant-baseline="central">Use sub-agents</text>
+<text class="ts" x="422" y="682" text-anchor="middle" dominant-baseline="central">Isolate concerns</text>
+</g>
+
+<g class="c-teal">
+<rect x="508" y="652" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="578" y="666" text-anchor="middle" dominant-baseline="central">Compact context</text>
+<text class="ts" x="578" y="682" text-anchor="middle" dominant-baseline="central">Prune stale turns</text>
+</g>
+
+</svg>
