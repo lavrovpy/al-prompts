@@ -15,13 +15,17 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/duolingo-at-home",
+        "./skills/codebase-study-plan",
         "./skills/editor",
+        "./skills/experimental/duolingo-at-home",
+        "./skills/experimental/nmt-test",
+        "./skills/foreign-language-a2-tutor",
         "./skills/interview-coach",
         "./skills/interview-questions-creator",
-        "./skills/nmt-test",
+        "./skills/interview-scorecard",
         "./skills/notes-verification",
         "./skills/quick-grammar-check",
+        "./skills/text-to-svg-for-slide",
         "./skills/translator-en-ukr"
       ]
     }
