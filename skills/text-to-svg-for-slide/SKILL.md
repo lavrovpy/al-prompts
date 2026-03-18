@@ -32,7 +32,7 @@ Before finishing any SVG, verify all of the following:
 1. **Embedded `<style>` block** — Define all CSS classes inside the SVG's
    `<style>` element. Never rely on an external stylesheet.
 2. **No `var(--x)` references** — Replace every CSS custom property with an
-   explicit color value (e.g., `var(--b)` → `#999`).
+   explicit color value (e.g., `var(--b)` → `#16213E`).
 3. **No `context-stroke` or `context-fill`** — These are modern CSS properties
    unsupported in most SVG renderers. Create separate `<marker>` definitions
    with hardcoded colors for each stroke color needed.
@@ -117,6 +117,67 @@ expected and visually correct).
   A line at y=52 in a height=58 box with 7.5px font has its bottom edge at
   y=55.75 — only 2.25px from the border. Always verify with Step 3.
 
+## Floating Elements (Markers, Tooltips, Badges)
+
+Any element that overlays the slide layout — tooltips, "we are here" markers,
+callout badges, speech-bubble annotations — must be placed without overlapping
+existing content. This is the second most common SVG slide mistake after
+uneven padding.
+
+### Overlap prevention rule
+
+Before placing any floating element, compute its **full bounding box**
+(rect + arrow tip + stroke width). Then verify it does not overlap with ANY
+other element's bounding box. Remember: with `dominant-baseline="central"`,
+a text glyph extends `font_size / 2` above and below its `y` coordinate.
+
+**Minimum clearance between a floating element and any adjacent element: 4px.**
+
+### Space insertion algorithm
+
+When a floating element must sit between two vertical sections (e.g., a
+marker between a subtitle and a bar chart):
+
+```
+needed   = element_height + arrow_extension + 2 × clearance
+available = next_section_y - previous_element_bottom
+
+if available < needed:
+    delta = needed - available
+    shift next_section and ALL downstream elements down by delta
+    increase viewBox height by delta
+```
+
+This cascading shift applies to every `y`, `y1`, `y2`, `cy`, and polygon
+point below the insertion gap. Missing even one element creates a visual
+break — search the file for every numeric y-value and verify each was
+either left unchanged (above the gap) or shifted by exactly `delta`.
+
+### Post-placement checklist
+
+After positioning a floating element, explicitly verify:
+
+- [ ] No overlap with any text line, rect, circle, line, or polygon
+- [ ] Arrow tip has >= 4px clearance to its target element
+- [ ] Element body has >= 4px clearance to adjacent text above/below
+- [ ] Element stays within the SVG viewBox bounds
+- [ ] If the element is a speech bubble, it follows the 3-layer structure
+      (rect → stroked arrow → cover polygon) from the Speech Bubble section
+
+### Common mistakes
+
+- **Placing a marker at a hardcoded y without checking surrounding text** —
+  a "WE ARE HERE" badge at y=36 will overlap a subtitle at y=44. Always
+  compute: `subtitle_bottom = subtitle_y + font_size/2`, then place the
+  marker at `subtitle_bottom + clearance`.
+- **Forgetting to cascade the shift** — inserting 20px of space for a marker
+  but not shifting the elements below it by 20px. Every downstream y-value
+  must be updated.
+- **Using a simple rect+triangle without the 3-layer structure** — floating
+  badges that act as speech bubbles must follow the same rect → stroked
+  arrow → cover polygon pattern. A bare polygon without a cover will show
+  a stroke seam.
+
 ## SVG Structure Template
 
 Use this skeleton for every slide SVG. Note: replace the example values with
@@ -126,23 +187,24 @@ actual dimensions and colors for the specific slide.
 <svg width="100%" viewBox="0 0 680 720" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <!-- One marker per arrow color — never use context-stroke -->
-  <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5"
+  <marker id="arrow-coral" viewBox="0 0 10 10" refX="8" refY="5"
           markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-    <path d="M2 1L8 5L2 9" fill="none" stroke="#0F6E56"
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#C0364A"
           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </marker>
 </defs>
 
 <style>
-  /* Typography — define once here, not in external CSS */
-  .th { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Typography — Inter */
+  .th { font-family: 'Inter', 'Segoe UI', sans-serif;
         font-size: 13px; font-weight: 600; }
-  .ts { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  .ts { font-family: 'Inter', 'Segoe UI', sans-serif;
         font-size: 11px; font-weight: 400; }
 
-  /* Color classes — light bg, dark stroke/text */
-  .c-teal rect  { fill: #E8F5F0; stroke: #0F6E56; }
-  .c-teal text  { fill: #0F6E56; }
+  /* Color classes */
+  /* Text must ONLY be dark (#16213E) or white (#FFFFFF) */
+  .c-coral rect  { fill: #FDECEF; stroke: #C0364A; }
+  .c-coral text  { fill: #16213E; }
 </style>
 
 <!-- Content here -->
@@ -230,7 +292,7 @@ Place a small filled circle at the start of each line, vertically centered on
 the text's y-coordinate. Then offset the text to the right:
 
 ```xml
-<circle cx="14" cy="32" r="1.5" fill="#555"/>
+<circle cx="14" cy="32" r="1.5" fill="#16213E"/>
 <text x="20" y="32" dominant-baseline="central" class="box-text">List item</text>
 ```
 
@@ -238,7 +300,7 @@ Rules:
 - **Bullet radius**: 1.5px (scales well at 7–9px font sizes)
 - **Bullet cx**: same as the original text left padding (e.g., 10) + 4
 - **Text x**: bullet cx + 6 (gives a clean gap between dot and text)
-- **Bullet fill**: match the text fill color (e.g., `#555` for body text)
+- **Bullet fill**: match the text fill color (e.g., `#16213E` for body text)
 - **Bullet cy**: must equal the text `y` so `dominant-baseline="central"`
   aligns them perfectly
 
@@ -256,9 +318,10 @@ Rules:
 
 ## Color Palette Convention
 
-When creating slide diagrams with semantic colors, use light backgrounds with
-matching darker strokes and text. Read `references/color-palettes.md` for
-ready-to-use palettes with teal, red, coral, amber, green, blue, and purple.
+**Text must ONLY be dark (`#16213E`) or white (`#FFFFFF`)** — no colored
+text. Use light tint backgrounds with matching shade strokes. Read
+`references/color-palettes.md` for the full palette, CSS classes, and
+color pairing rules.
 
 ## Fixing Existing SVGs
 
@@ -275,8 +338,10 @@ When an SVG renders with black boxes, missing colors, or invisible text:
 
 ### Reference Files
 
-- **`references/color-palettes.md`** — Ready-to-use semantic color palettes
-  and typography class definitions
+- **`references/color-palettes.md`** — Color palette with CSS classes,
+  color pairing rules, and WCAG accessibility notes
+- **`references/brand-typography.md`** — Inter font specification, weight
+  mapping, and CSS class definitions
 
 ### Example Files
 
