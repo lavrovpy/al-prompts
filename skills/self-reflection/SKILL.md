@@ -1,23 +1,34 @@
 ---
 name: self-reflection
-description: Read past Claude Code session logs to find what the agent learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into CLAUDE.md / AGENTS.md lines so future agents start out knowing them. Use whenever the user asks Claude to "reflect on past sessions", "audit my logs", "what should be in CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about Claude Code's own behavior across `~/.claude/projects/`. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
+description: Read your AI coding agent's past session logs (Claude Code, Codex, Cursor, Gemini CLI, Aider, …) to find what it learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into the project's agent memory file (AGENTS.md, CLAUDE.md, .cursorrules, or equivalent) so future sessions start out knowing them. Use whenever the user asks to "reflect on past sessions", "audit my logs", "what should be in AGENTS.md/CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about the agent's own behavior. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
 argument-hint: "[repo|all] [count|all]"
 arguments: [repo, count]
 ---
 
 # Self-Reflection
 
-Read past session transcripts under `~/.claude/projects/`, find the moments where the agent **struggled and then discovered something it should have known from the start**, and output that knowledge as lines ready to drop into the repo's `CLAUDE.md` / `AGENTS.md`.
+Read past session transcripts from whatever AI coding agent produced them, find the moments where the agent **struggled and then discovered something it should have known from the start**, and record that knowledge in the project's agent memory file so the next session starts already knowing it.
 
-Classic example: the agent ran `npm install`, it failed, the agent checked `package.json`, found `pnpm` — and only then moved on. The durable lesson is "this project uses pnpm". A future agent should know that on line one instead of rediscovering it.
+Classic example: the agent ran `npm install`, it failed, the agent checked `package.json`, found `pnpm` — and only then moved on. The durable lesson is "this project uses pnpm". A future session should know that on line one instead of rediscovering it.
 
-This is not a session summary ([[session-summary]] does that). The output is the *memory file*, not a write-up of what happened.
+This is not a session summary. The output is the *memory file*, not a write-up of what happened.
+
+## The memory file
+
+Write the result into the project's agent-instruction file — whichever the project (or the running agent) already uses:
+
+- **AGENTS.md** — cross-agent standard (Codex, Cursor, and others); the safe default if none exists yet.
+- **CLAUDE.md** — Claude Code.
+- **.cursorrules** or **.cursor/rules/*.mdc** — Cursor.
+- **GEMINI.md** and similar — match the tool.
+
+If several exist, update the one the project actually keeps current. If none exists, create `AGENTS.md`.
 
 ## Arguments
 
 Both optional and positional.
 
-- **`$repo`** — `all` or empty → every repo (default). An absolute path, a short name (matched against each project's decoded cwd), or a path-encoded dir name (`-Users-me-Dev-foo`) → just that repo. If a short name matches more than one repo, list them and ask.
+- **`$repo`** — `all` or empty → every repo found in the logs (default). An absolute path or a short name → just that repo. If a short name matches more than one repo, list them and ask.
 - **`$count`** — `all` or empty → every session (default). An integer → the N most recent sessions per repo.
 
 To pass only a count: `/self-reflection all 10`. Invoked via natural language with no numbers → use defaults; don't interrupt to ask.
@@ -34,26 +45,31 @@ Good signals: wrong command/tool tried first (`npm` vs `pnpm`, wrong test runner
 
 ## The filter — less is more
 
-`CLAUDE.md` loads into context every single turn, so every line must earn its place. Before keeping a fact, apply:
+The memory file loads into the agent's context on every turn, so every line must earn its place. Before keeping a fact, apply:
 
 - **If it's easy to find, let the agent find it.** Anything one glance at an obvious place reveals — a `scripts` entry in `package.json`, a README heading, an obvious lockfile — does **not** go in. Add a fact only when the *obvious* path misleads or the discovery cost was real.
-- **No duplicates.** Read the repo's existing `CLAUDE.md` / `AGENTS.md` first and skip anything already covered.
-- **No generic advice.** "Write tests", "handle errors" — never. Only project-specific facts.
+- **No duplicates.** Read the existing memory file first and skip anything already covered.
+- **No generic advice.** "Write tests", "handle errors", and tool-contract trivia (read-before-edit, token limits) are true in every repo and for every agent — never include them. Only project-specific facts.
 - **No secrets.** No keys, tokens, or credentials.
-- **Prefer recurring pain.** A struggle seen across several sessions beats a single stumble.
+- **Prefer recurring pain.** A struggle seen across several sessions beats a single stumble; a fact the *user* stopped to correct is the strongest signal of all.
 
-When in doubt, leave it out. A short, sharp `CLAUDE.md` is the goal.
+When in doubt, leave it out. A short, sharp memory file is the goal.
 
 ## How to execute
 
-1. **Inventory.** List `~/.claude/projects/`. Each subdir is one repo (path-encoded cwd: dashes are slashes). Apply `$repo`, then per surviving repo list `*.jsonl` by mtime, **drop the newest (the currently-running session)**, and keep `$count` of the rest. Empty result → tell the user, stop.
-2. **Scan.** Transcripts are large. If a repo has many sessions, fan out: split its `.jsonl` files across parallel read-only subagents (`Explore` or `general-purpose`), one group each, and have each return the harvested facts (fact + the evidence snippet that justifies it + which CLAUDE.md section it belongs to). Few files → just read them directly.
-3. **Distill.** Pool the facts, dedup, drop everything the filter rejects, and read each repo's existing memory file to avoid repeats.
-4. **Output** (below). Then offer to append the lines to each repo's `CLAUDE.md` / `AGENTS.md` — only edit after the user confirms.
+1. **Locate the logs.** Find where the running agent stores its session transcripts, then filter to the target repo (`$repo`) and the `$count` most-recent sessions, skipping the currently-running session (usually the newest by mtime). Common locations:
+   - **Claude Code** — `~/.claude/projects/<dir>/*.jsonl`; one dir per repo, named by the repo's path with `/` replaced by `-`.
+   - **Codex CLI** — `~/.codex/sessions/` (`*.jsonl` rollout files).
+   - **Cursor** — workspace-storage SQLite under `~/Library/Application Support/Cursor/User/workspaceStorage/`.
+   - **Aider** — `.aider.chat.history.md` in the repo.
+   - If you don't recognize the agent, ask the user where its history lives. Empty result → say so, stop.
+2. **Scan.** Transcripts can be large. If the agent can spawn parallel read-only sub-tasks, split the files across them; otherwise read directly, grepping big files for friction (errors, retries, user corrections) rather than reading linearly. Each scan returns the harvested facts + the evidence snippet that justifies each + its target section.
+3. **Distill.** Pool the facts, dedup, drop everything the filter rejects, and read the existing memory file to avoid repeats.
+4. **Output** (below). Then offer to append the lines to the memory file — only edit after the user confirms.
 
 ## Output format
 
-Group by repository (memory files are per-repo). Under each, write paste-ready Markdown organized into the standard `CLAUDE.md` sections — use only the sections you actually have facts for:
+Group by repository (memory files are per-repo). Under each, write paste-ready Markdown organized into standard sections — use only the sections you actually have facts for:
 
 - **Common Commands** — the right command when the obvious one is wrong.
 - **Standards** — conventions the agent violated and was corrected on.
