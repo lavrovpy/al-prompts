@@ -1,6 +1,6 @@
 ---
 name: self-reflection
-description: Read your AI coding agent's past session logs (Claude Code, Codex, Cursor, Gemini CLI, Aider, …) to find what it learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into the project's agent memory file (AGENTS.md, CLAUDE.md, or equivalent) so future sessions start out knowing them. Use whenever the user asks to "reflect on past sessions", "audit my logs", "what should be in AGENTS.md/CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about the agent's own behavior. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
+description: Read your AI coding agent's past session logs (Claude Code, Codex, Cursor, Gemini CLI, Pi, …) to find what it learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into the project's agent memory file (AGENTS.md, CLAUDE.md, or equivalent) so future sessions start out knowing them. Use whenever the user asks to "reflect on past sessions", "audit my logs", "what should be in AGENTS.md/CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about the agent's own behavior. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
 argument-hint: "[repo|all] [count|all]"
 arguments: [repo, count]
 ---
@@ -17,9 +17,8 @@ This is not a session summary. The output is the *memory file*, not a write-up o
 
 Write the result into the project's agent-instruction file — whichever the project (or the running agent) already uses:
 
-- **AGENTS.md** — cross-agent standard (Codex, Cursor, and others); the safe default if none exists yet.
+- **AGENTS.md** — cross-agent standard (Codex, Cursor, Gemini, and others); the safe default if none exists yet.
 - **CLAUDE.md** — Claude Code.
-- **GEMINI.md** and similar — match the tool.
 
 If several exist, update the one the project actually keeps current. If none exists, create `AGENTS.md`.
 
@@ -60,7 +59,7 @@ When in doubt, leave it out. A short, sharp memory file is the goal.
    - **Claude Code** — `~/.claude/projects/<dir>/*.jsonl`; one dir per repo, named by the repo's path with `/` replaced by `-`.
    - **Codex CLI** — `~/.codex/sessions/` (`*.jsonl` rollout files).
    - **Cursor** — workspace-storage SQLite under `~/Library/Application Support/Cursor/User/workspaceStorage/`.
-   - **Aider** — `.aider.chat.history.md` in the repo.
+   - **Pi** — consult its session/history store; ask the user if the location isn't obvious.
    - If you don't recognize the agent, ask the user where its history lives. Empty result → say so, stop.
 2. **Scan.** Transcripts can be large. If the agent can spawn parallel read-only sub-tasks, split the files across them; otherwise read directly, grepping big files for friction (errors, retries, user corrections) rather than reading linearly. Each scan returns the harvested facts + the evidence snippet that justifies each + its target section.
 3. **Distill.** Pool the facts, dedup, drop everything the filter rejects, and read the existing memory file to avoid repeats.
