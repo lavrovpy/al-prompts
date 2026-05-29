@@ -1,6 +1,6 @@
 ---
 name: self-reflection
-description: Read your AI coding agent's past session logs (Claude Code, Codex, Cursor, Gemini CLI, Aider, …) to find what it learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into the project's agent memory file (AGENTS.md, CLAUDE.md, .cursorrules, or equivalent) so future sessions start out knowing them. Use whenever the user asks to "reflect on past sessions", "audit my logs", "what should be in AGENTS.md/CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about the agent's own behavior. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
+description: Read your AI coding agent's past session logs (Claude Code, Codex, Cursor, Gemini CLI, Aider, …) to find what it learned the hard way — failed approaches, missed constraints, facts it had to dig for — and turn the durable, non-obvious ones into the project's agent memory file (AGENTS.md, CLAUDE.md, or equivalent) so future sessions start out knowing them. Use whenever the user asks to "reflect on past sessions", "audit my logs", "what should be in AGENTS.md/CLAUDE.md", "where did the agent struggle", "self-reflect", "/self-reflection", or any retrospective about the agent's own behavior. Trigger even without the word "logs" — e.g. "look back at this week and tell me what tripped you up".
 argument-hint: "[repo|all] [count|all]"
 arguments: [repo, count]
 ---
@@ -19,7 +19,6 @@ Write the result into the project's agent-instruction file — whichever the pro
 
 - **AGENTS.md** — cross-agent standard (Codex, Cursor, and others); the safe default if none exists yet.
 - **CLAUDE.md** — Claude Code.
-- **.cursorrules** or **.cursor/rules/*.mdc** — Cursor.
 - **GEMINI.md** and similar — match the tool.
 
 If several exist, update the one the project actually keeps current. If none exists, create `AGENTS.md`.
