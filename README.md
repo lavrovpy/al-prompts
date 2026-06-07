@@ -63,6 +63,8 @@ If you want to use skills with another tool, check that tool's documentation.
   - Example: Paste study notes; get an audit and a revised, high-density version.
 - `prompts/translator-en-ukr.md`: English ↔ Ukrainian translator with nuance and context handling.
   - Example: Paste text in English or Ukrainian; get a fluent translation with nuance notes.
+- `prompts/language-learning-infographic.md`: Image-generation prompt for a clean, illustrated vocabulary infographic poster in a polished language-book style.
+  - Example: Set target language, native language, and a topic (e.g. café); get a 16:9 color-coded poster with bold target words, translations, and useful phrases.
 - `prompts/experimental/duolingo-at-home.md`: Simulated video call language practice with a sarcastic teenage character named Lily.
   - Example: Start a conversation in your target language at A2 level; get casual, immersive practice.
 - `prompts/quick-grammar-check.md`: Fast grammar, spelling, and consistency check.
