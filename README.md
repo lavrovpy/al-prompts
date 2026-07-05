@@ -1,9 +1,10 @@
 A personal library of AI prompts and [Agent Skills](https://agentskills.io/specification) for writing, interview prep, translation, language learning, and education.
 
-Each tool in this repo is available in **two forms**:
+Most tools in this repo are available in **two forms**:
 
 - **Prompts** (`prompts/`) — standalone system prompts you can copy-paste into any AI chat (ChatGPT, Claude, etc.). They follow a two-step **Prompt Priming** approach: the assistant first acknowledges the instructions and asks for input, then processes it using the specified format.
 - **Skills** (`skills/`) — the same tools packaged as [Agent Skills](https://agentskills.io/specification) (each containing a `SKILL.md` file), installable in agent tools.
+Some workflows are skill-only when they depend on agent context, repository state, or tool usage.
 
 ## Installing Skills
 
@@ -49,6 +50,10 @@ After installing a skill in Codex, restart Codex to pick up new skills.
 
 If you want to use skills with another tool, check that tool's documentation.
 
+## Skill-only workflows
+
+- `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
+
 ## Prompts
 
 - `prompts/editor.md`: Senior English editor and writing coach for polishing professional text.
@@ -64,7 +69,7 @@ If you want to use skills with another tool, check that tool's documentation.
 - `prompts/translator-en-ukr.md`: English ↔ Ukrainian translator with nuance and context handling.
   - Example: Paste text in English or Ukrainian; get a fluent translation with nuance notes.
 - `prompts/language-learning-infographic.md`: Image-generation prompt for a clean, illustrated vocabulary infographic poster in a polished language-book style.
-  - Example: Set target language, native language, and a topic (e.g. café); get a 16:9 color-coded poster with bold target words, translations, and useful phrases.
+  - Example: Set target language, native language, and a topic (e.g. cafe); approve the copy deck, then get a 16:9 color-coded poster with bold target words, translations, and useful phrases.
 - `prompts/experimental/duolingo-at-home.md`: Simulated video call language practice with a sarcastic teenage character named Lily.
   - Example: Start a conversation in your target language at A2 level; get casual, immersive practice.
 - `prompts/quick-grammar-check.md`: Fast grammar, spelling, and consistency check.
