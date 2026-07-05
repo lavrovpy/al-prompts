@@ -1,4 +1,4 @@
 interface:
   display_name: "Intent-Rich PR"
-  short_description: "Create PRs with intent and rationale"
-  default_prompt: "Use $intent-rich-pr to create a pull request with reviewer context, issue motivation, and decision rationale."
+  short_description: "Create PRs with intent, rationale, and review focus"
+  default_prompt: "Use $intent-rich-pr to create a pull request with reviewer context, issue motivation, decision rationale, review focus, and validation."

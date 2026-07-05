@@ -19,6 +19,10 @@ Issue/ticket: <link or "None">
 
 <Summarize reviewer-facing reasoning: important decisions, tradeoffs, rejected options, course corrections, and assumptions. Do not include raw hidden chain-of-thought.>
 
+## Review focus
+
+<State the blast radius and where reviewers should spend attention: risky files, user-facing behavior, data/security paths, test rewrites, CI changes, or why this is low-risk. Treat AI review findings as signals, not final approval.>
+
 ## What changed
 
 - <Concrete change 1>
@@ -63,6 +67,10 @@ The fix uses a two-step workflow instead of trying to make the final image gener
 
 This makes the language content inspectable before it becomes pixels. It also gives future code-review or prompt-review agents the real design intent: the prompt is optimized for educational correctness and legibility, not maximum vocabulary coverage.
 
+## Review focus
+
+Please review the prompt flow rather than only the wording diff. The important risk is whether the workflow still allows unapproved or improvised educational text into the final image. The validation is light, so this should get a human prompt-review pass before being treated as a stable content-generation pattern.
+
 ## What changed
 
 - Added missing-input handling for target language, native language, and topic placeholders.
@@ -86,6 +94,7 @@ Include rationale when it changes how reviewers should interpret the diff, for e
 - A first approach was abandoned after discovering repo constraints.
 - The diff looks indirect because it preserves compatibility or existing conventions.
 - A test or validation gap remains and reviewers should know why.
+- The implementation is agent-authored and the useful plan, assumptions, or rejected alternatives should be preserved for the reviewer.
 
 Avoid:
 
@@ -93,3 +102,21 @@ Avoid:
 - Long chronological narration.
 - Generic statements like "this improves quality" without explaining why.
 - Claims about issue context or validation that were not verified.
+
+## Review Focus Guidance
+
+Use this section to help reviewers allocate scarce attention.
+
+Include:
+
+- Blast radius: who or what is affected if this is wrong.
+- Load-bearing areas: auth, payments, security, privacy, migrations, data integrity, prompts with untrusted input, CI, or core business logic.
+- Review friction: large diffs, many touched files, generated code, unclear ownership, or broad test rewrites.
+- Test scrutiny: whether assertions changed, tests were removed/skipped, lint or coverage thresholds moved, or CI behavior changed.
+- Review posture: low-risk glance, normal human review, targeted owner review, security review, or multiple review signals.
+
+Avoid:
+
+- Treating passing tests or AI review approval as proof that the change is understood.
+- Asking reviewers to inspect everything equally.
+- Hiding known validation gaps in a generic risk section.
