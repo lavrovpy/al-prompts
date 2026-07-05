@@ -1,0 +1,4 @@
+interface:
+  display_name: "Self-Reflection"
+  short_description: "Harvest durable facts from agent logs"
+  default_prompt: "Use $self-reflection to inspect past agent transcripts and propose concise AGENTS.md or CLAUDE.md memory-file entries."
