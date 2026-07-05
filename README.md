@@ -1,9 +1,10 @@
 A personal library of AI prompts and [Agent Skills](https://agentskills.io/specification) for writing, interview prep, translation, language learning, and education.
 
-Each tool in this repo is available in **two forms**:
+Most tools in this repo are available in **two forms**:
 
 - **Prompts** (`prompts/`) — standalone system prompts you can copy-paste into any AI chat (ChatGPT, Claude, etc.). They follow a two-step **Prompt Priming** approach: the assistant first acknowledges the instructions and asks for input, then processes it using the specified format.
 - **Skills** (`skills/`) — the same tools packaged as [Agent Skills](https://agentskills.io/specification) (each containing a `SKILL.md` file), installable in agent tools.
+Some workflows are skill-only when they depend on agent context, repository state, or tool usage.
 
 ## Installing Skills
 
@@ -48,6 +49,10 @@ Or use a GitHub URL:
 After installing a skill in Codex, restart Codex to pick up new skills.
 
 If you want to use skills with another tool, check that tool's documentation.
+
+## Skill-only workflows
+
+- `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 
 ## Prompts
 
