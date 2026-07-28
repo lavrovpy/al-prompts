@@ -52,6 +52,8 @@ If you want to use skills with another tool, check that tool's documentation.
 
 ## Skill-only workflows
 
+- `skills/agentic-readiness`: Measure how ready a repository is for autonomous agent development by sending a probe agent to genuinely implement a feature in an isolated worktree, then reporting — with evidence — every place it was blocked, had to ask, guessed wrong, or wasted effort.
+  - Example: Run `/agentic-readiness "add another endpoint"`; get a phase-by-phase verdict (bootstrap, orient, locate, change, validate, land) plus paste-ready fixes for the missing docs, scripts, or lint rules behind each blocker.
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Inspect past AI coding-agent session transcripts and propose concise `AGENTS.md` / `CLAUDE.md` memory-file entries for durable, non-obvious project facts the agent learned through friction.
   - Example: Ask it to audit recent agent logs for a repo; get paste-ready memory-file lines for repeated command mistakes, hidden conventions, important paths, or environment gotchas.

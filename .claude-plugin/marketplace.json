@@ -5,16 +5,17 @@
     "email": "alo.andretti@gmail.com"
   },
   "metadata": {
-    "description": "Collection of language learning, translation, writing, and interview preparation skills",
+    "description": "Collection of language learning, translation, writing, interview preparation, and software engineering skills",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "alavreniuk-skills",
-      "description": "Collection of language learning, translation, writing, interview preparation, and education skills",
+      "description": "Collection of language learning, translation, writing, interview preparation, education, and software engineering skills",
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/agentic-readiness",
         "./skills/codebase-study-plan",
         "./skills/editor",
         "./skills/experimental/duolingo-at-home",
