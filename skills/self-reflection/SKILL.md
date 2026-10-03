@@ -1,88 +1,88 @@
 ---
 name: self-reflection
-description: Inspect past AI coding-agent session transcripts to find durable, non-obvious project facts the agent learned through friction, then propose concise AGENTS.md or CLAUDE.md memory-file entries. Use when the user asks to audit agent logs, reflect on past coding sessions, find what tripped the agent up, or decide what belongs in AGENTS.md/CLAUDE.md from transcript evidence.
+description: Retro over a repo's recent coding-agent sessions. Finds detours and stale docs, proposes environment fixes that make the repo easier to navigate.
+disable-model-invocation: true
+argument-hint: "[repo] [count]"
+arguments: repo count
 ---
 
-# Self-Reflection
+# Self-reflection
 
-Read past session transcripts from an AI coding agent, find the moments where the agent **struggled and then discovered something it should have known from the start**, and propose concise project memory lines so the next session starts already knowing them.
+A **retro** over the last few coding-agent sessions in one repository. The goal is a more navigable **environment**: every finding becomes a candidate change to the repo's pointers, docs, checks, or tooling, so the next session spends fewer tokens reaching the same place. The code the sessions produced is out of scope; that is a code review's job.
 
-Classic example: the agent ran `npm install`, it failed, the agent checked `package.json`, found `pnpm`, and only then moved on. The durable lesson is "this project uses pnpm". A future session should know that on line one instead of rediscovering it.
-
-This is not a session summary. The output is the *memory file*, not a write-up of what happened.
-
-## The memory file
-
-Propose entries for the project's agent-instruction file, whichever the project or the running agent already uses:
-
-- **AGENTS.md** - cross-agent standard (Codex, Cursor, Gemini, and others); the safe default if none exists yet.
-- **CLAUDE.md** - Claude Code.
-
-If several exist, target the one the project actually keeps current. If none exists, propose `AGENTS.md` as the target. Do not create or edit any memory file until the user confirms.
+Load the `writing-for-agents` skill, when available, before drafting any candidate that edits a steering file, doc, or skill.
 
 ## Arguments
 
-Both optional and positional.
+- `$repo`: the repository. Default: the git root of the current working directory. Accepts an absolute path, or a short name matched against the last path segment of your project directories; ask when more than one matches.
+- `$count`: sessions to read. Default `10`.
 
-- **`$repo`** - `all` or empty -> every repo found in the logs (default). An absolute path or a short name -> just that repo. If a short name matches more than one repo, list them and ask.
-- **`$count`** - `all` or empty -> every session (default). An integer -> the N most recent sessions per repo.
+## Steps
 
-To pass only a count: `/self-reflection all 10`. Invoked via natural language with no numbers -> use defaults; don't interrupt to ask.
+### 1. Collect the sessions
 
-## What to harvest
+A repository's sessions include its worktrees: run `git -C <repo> worktree list --porcelain` and treat every listed path as the repo.
 
-Scan each transcript for friction, then ask of every rough patch: **"What fact, known upfront, would have avoided this?"** Keep only facts that are:
+- **Claude Code**: `~/.claude/projects/<encoded>/*.jsonl`. `<encoded>` is the session's cwd with every non-alphanumeric character replaced by `-` (`/Users/me/.codex/x_y` → `-Users-me--codex-x-y`). The encoding is lossy, so confirm a candidate file by the `cwd` field in its records.
+- **Codex**: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. The first line is a `session_meta` record; its `payload.cwd` is the session's cwd.
+- **Other agents**: read only stores whose format is documented and locally readable; for anything else, ask the user where the transcripts live.
 
-- **Durable** - true next session too (a tool choice, a path, a convention, a gotcha), not a one-off bug.
-- **Non-obvious** - the agent wasted real effort finding it, or got it wrong first.
-- **Worth the context budget** - see the filter below.
+Keep files whose cwd is a repo path or below one. Sort the union by mtime, drop the session you are running in, and keep the newest `$count`. Done when you can list each kept file with its agent, cwd, and date. If none remain, say so and stop.
 
-Good signals: wrong command/tool tried first (`npm` vs `pnpm`, wrong test runner, wrong build step); a constraint the user had to repeat; a file or service the agent hunted for across many searches; an environment assumption that bit it (dev server already running, required env var, monorepo layout); a convention it violated and was corrected on.
+### 2. Read each session in a subagent
 
-## The filter: less is more
+Dispatch one read-only subagent per session, all in a single message so they run in parallel. Give each only its file path, the agent that wrote it, the repo paths, the lenses below, and the return format. Every finding quotes the session's own record; a finding without a quote is dropped.
 
-The memory file loads into the agent's context on every turn, so every line must earn its place. Before keeping a fact, apply:
+Transcripts are sensitive: evidence quotes stay short, and secret-like values, tokens, private URLs, customer data, and personal messages are redacted.
 
-- **If it's easy to find, let the agent find it.** Anything one glance at an obvious place reveals - a `scripts` entry in `package.json`, a README heading, an obvious lockfile - does **not** go in. Add a fact only when the *obvious* path misleads or the discovery cost was real.
-- **No duplicates.** Read the existing memory file first and skip anything already covered.
-- **No generic advice.** "Write tests", "handle errors", and tool-contract trivia (read-before-edit, token limits) are true in every repo and for every agent - never include them. Only project-specific facts.
-- **No secrets.** No keys, tokens, or credentials.
-- **Prefer recurring pain.** A struggle seen across several sessions beats a single stumble; a fact the *user* stopped to correct is the strongest signal of all.
+**Lenses**
 
-When in doubt, leave it out. A short, sharp memory file is the goal.
+- **Detour**: the stretch of tool calls between the agent needing something (a file, a command, a convention) and first reaching it. Record the target, where it actually lived, the calls spent getting there (searches, reads, failed commands), and what the agent read on the way. Asking the user for something the repo holds, or rewriting code that already existed, is a detour that never arrived. A fact the user stopped to correct is the strongest signal.
+- **Stale doc**: the agent acted on a document (README, `AGENTS.md` / `CLAUDE.md`, `docs/`, a skill, a code comment) and the environment then contradicted it: a documented command failed, a path was missing, an API or flag had changed. Record the doc, the claim, and the contradicting evidence.
 
-## How to execute
+When the session shows them, also record: a mistake an **automated check** could have caught, a mistake the **reviewer** missed, a tool call that returned far more than it was worth (**tool economy**), and information the agent needed but could not reach (**information access**).
 
-1. **Locate the logs.** Find where the running agent stores its session transcripts, then filter to the target repo (`$repo`) and the `$count` most-recent sessions, skipping the currently-running session (usually the newest by mtime). Common locations:
-   - **Claude Code** - `~/.claude/projects/<dir>/*.jsonl`; one dir per repo, named by the repo's path with `/` replaced by `-`.
-   - **Codex CLI** - `~/.codex/sessions/` (`*.jsonl` rollout files).
-   - **Other agents** - ask the user for the transcript location or exported logs unless the storage format is already documented and locally readable. Do not guess how to parse opaque app stores such as SQLite workspace state.
-   - If you don't recognize the agent, ask the user where its history lives. Empty result -> say so, stop.
-2. **Scan.** Transcripts can be large. If the agent can spawn parallel read-only sub-tasks, split the files across them; otherwise read directly, grepping big files for friction (errors, retries, user corrections) rather than reading linearly. Each scan returns the harvested facts, a brief redacted evidence note, and the target section.
-   - Treat transcripts as sensitive. Do not paste long raw transcript excerpts into the final answer.
-   - Redact secret-like values, tokens, keys, private URLs, customer data, and personal messages in evidence notes.
-   - If using sub-tasks, pass only the transcript paths and extraction criteria. Do not pass unnecessary private context or expected conclusions.
-3. **Distill.** Pool the facts, dedup, drop everything the filter rejects, and read the existing memory file to avoid repeats.
-4. **Output** (below). Then offer to append the lines to the memory file. Only edit after the user confirms.
+Return format:
 
-## Output format
-
-Group by repository (memory files are per-repo). Under each, write paste-ready Markdown organized into standard sections. Use only the sections you actually have facts for:
-
-- **Common Commands** - the right command when the obvious one is wrong.
-- **Standards** - conventions the agent violated and was corrected on.
-- **Key Directories** - layout the agent had to hunt for.
-- **Notes** - gotchas, environment assumptions, anything else durable.
-
-```markdown
-## /Users/me/Dev/foo
-
-### Common Commands
-- Use `pnpm`, not `npm` - this is a pnpm workspace. (3 sessions started with a failed `npm install`)
-
-### Notes
-- The dev server is assumed already running; don't start it.
-- Integration tests need `DATABASE_URL` set, or they hang silently.
+```json
+{"findings": [{
+  "session": "<file>",
+  "agent": "claude-code | codex | <other>",
+  "lens": "detour | stale-doc | automated-check | reviewer | tool-economy | information-access",
+  "target": "the file, fact, or command the agent was after",
+  "what": "one specific sentence",
+  "evidence": "short redacted quote or tool-call excerpt from the record",
+  "cost": "tool calls spent, plus tokens when the record carries usage"
+}]}
 ```
 
-Keep each line one sentence. Put the *why* (the evidence) in a short parenthetical only when it helps the user trust the line, not a paragraph. If a repo yields nothing worth adding, say so plainly; an empty result is a valid, honest outcome.
+A smooth session returns an empty list.
+
+### 3. Merge and filter
+
+Pool the findings and merge the ones that share a **target**, keeping the session count: a detour to the same place in three sessions is one finding at three times the cost. Then keep only findings an environment change would prevent:
+
+- **Easy finds stay out.** When one glance at the obvious place (a `package.json` script, a lockfile, a README heading) answers the question, the agent can keep finding it; a pointer earns its place only when the obvious path misleads or the discovery cost was real.
+- **Project-specific only.** Advice true in every repo for every agent ("write tests", read-before-edit) is dropped.
+- **Recurring pain first.** A struggle across several sessions outranks a single stumble.
+
+Done when every remaining finding has a distinct target and survives the filter.
+
+### 4. Route each finding to its fix
+
+| Lens | Candidate fix |
+| --- | --- |
+| Detour | A **navigation pointer** to the target from a file the agent already reads (`AGENTS.md` / `CLAUDE.md`, a README, the neighbouring module), or move/rename the target to where agents look first |
+| Stale doc | Correct the doc, or delete it when the environment already answers the question (`--help`, `package.json` scripts, config) |
+| Automated check | A lint rule, type, test, pre-commit hook, or CI job. Read the repo's existing scripts and CI first: a check that exists but is unwired is the finding |
+| Reviewer | A rule in `CODING_STANDARDS.md` or the repo's equivalent, for judgement calls only; mechanical rules get a check |
+| Tool economy | Streamline or replace the tool |
+| Information access | Widen access: tee a log to a file, grant read-only access to a service |
+
+`AGENTS.md` / `CLAUDE.md` load into every session, so they carry navigation pointers and little else; steering that belongs in standards or a check moves out. Target whichever of the two the repo keeps current, and read it first so a candidate never repeats a line it already has.
+
+### 5. Present the candidates
+
+Present them in chat, most severe first, where severity is total cost across sessions. For each candidate give the fix, the file it touches, the evidence (session and quote), and the cost it would have saved. Close with the scope used: repo paths, agents, session count, and date range. A repo with nothing worth changing gets that said plainly.
+
+Propose only; apply a candidate once the user picks it.
