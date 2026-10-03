@@ -60,6 +60,10 @@ If you want to use skills with another tool, check that tool's documentation.
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Retro over a repo's last coding-agent sessions (Claude Code and Codex, worktrees included). Finds detours, where an agent took too long to reach a file, command, or convention; stale docs it trusted; and code that misleads agents: sprawling files, look-alike module names, dead code. Proposes fixes such as navigation pointers, doc corrections, automated checks, and splitting, renaming, or deleting that code.
   - Example: Run `/self-reflection` in a repo; get candidates ranked by how many tool calls each would have saved, each backed by a quote from the session.
+- `skills/study-questions`: Generate closed-book study questions from course material and record an answer key in a `study-log.md` next to the material. Serves questions that are due for review before new ones.
+  - Example: Point it at a course module; get 5-7 questions (how, why, compare, apply, find the error) plus a line listing concepts not covered this round.
+- `skills/study-coach`: Grade answers to those questions against the course material, quote the source for each correction, and schedule the next review in `study-log.md` (1, 3, 7, 21 days).
+  - Example: Give it a question ID and your answer; get a score, hints on the first attempt, and the full answer with the source quote after the second.
 
 ## Prompts
 
