@@ -1,4 +1,6 @@
 interface:
   display_name: "Self-Reflection"
-  short_description: "Harvest durable facts from agent logs"
-  default_prompt: "Use $self-reflection to inspect past agent transcripts and propose concise AGENTS.md or CLAUDE.md memory-file entries."
+  short_description: "Retro over recent agent sessions to make the repo easier to navigate"
+  default_prompt: "Use $self-reflection to read my last 10 coding-agent sessions in this repo and propose environment fixes for the detours and stale docs you find."
+policy:
+  allow_implicit_invocation: false
