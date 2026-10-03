@@ -26,10 +26,13 @@ Add the marketplace and install the plugin:
 /plugin install alavreniuk-skills@alavreniuk-skills
 ```
 
-After installation, skills are available as slash commands (e.g. `/interview-questions-creator`). To update later:
+After installation, skills are available as slash commands namespaced by the plugin (e.g. `/alavreniuk-skills:interview-questions-creator`; the bare `/interview-questions-creator` also works when no other command uses that name).
 
-```
-/plugin marketplace update
+Third-party marketplaces don't auto-update by default. To update, run `/plugin`, open the **Marketplaces** tab, select `alavreniuk-skills`, and choose **Update marketplace** (or **Enable auto-update** to keep it current). From a shell:
+
+```bash
+claude plugin marketplace update alavreniuk-skills
+claude plugin update alavreniuk-skills@alavreniuk-skills
 ```
 
 ### 3) Codex

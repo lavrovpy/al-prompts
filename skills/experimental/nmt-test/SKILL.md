@@ -1,6 +1,6 @@
 ---
 name: nmt-test
-description: Generate complete NMT (Національний мультипредметний тест) standardized educational assessment tests following the official Ukrainian exam format. Use when the user wants to create NMT practice tests, exam papers, or standardized assessments. Supports multiple disciplines with discipline-specific structures: history (Історія України), mathematics (Математика), Ukrainian language (Українська мова), biology (Біологія), physics (Фізика), and other subjects by analogy. Each discipline has its own question types, scoring, and quantity — read the corresponding example file before generating.
+description: "Generate complete NMT (Національний мультипредметний тест) standardized educational assessment tests following the official Ukrainian exam format. Use when the user wants to create NMT practice tests, exam papers, or standardized assessments. Supports multiple disciplines with discipline-specific structures: history (Історія України), mathematics (Математика), Ukrainian language (Українська мова), biology (Біологія), physics (Фізика), and other subjects by analogy. Each discipline has its own question types, scoring, and quantity — read the corresponding example file before generating."
 ---
 
 # NMT Test Generator

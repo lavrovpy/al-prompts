@@ -12,6 +12,13 @@
     {
       "name": "alavreniuk-skills",
       "description": "Collection of language learning, translation, writing, interview preparation, and education skills",
+      "author": {
+        "name": "Andrii Lavreniuk",
+        "email": "alo.andretti@gmail.com"
+      },
+      "homepage": "https://github.com/lavrovpy/al-prompts",
+      "repository": "https://github.com/lavrovpy/al-prompts",
+      "license": "MIT",
       "source": "./",
       "strict": false,
       "skills": [
