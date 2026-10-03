@@ -55,6 +55,10 @@ If you want to use skills with another tool, check that tool's documentation.
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Inspect past AI coding-agent session transcripts and propose concise `AGENTS.md` / `CLAUDE.md` memory-file entries for durable, non-obvious project facts the agent learned through friction.
   - Example: Ask it to audit recent agent logs for a repo; get paste-ready memory-file lines for repeated command mistakes, hidden conventions, important paths, or environment gotchas.
+- `skills/study-questions`: Generate closed-book study questions from course material and record an answer key in a `study-log.md` next to the material. Serves questions that are due for review before new ones.
+  - Example: Point it at a course module; get 5-7 questions (how, why, compare, apply, find the error) plus a line listing concepts not covered this round.
+- `skills/study-coach`: Grade answers to those questions against the course material, quote the source for each correction, and schedule the next review in `study-log.md` (1, 3, 7, 21 days).
+  - Example: Give it a question ID and your answer; get a score, hints on the first attempt, and the full answer with the source quote after the second.
 
 ## Prompts
 
