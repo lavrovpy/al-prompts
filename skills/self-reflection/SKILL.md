@@ -1,6 +1,6 @@
 ---
 name: self-reflection
-description: Retro over a repo's recent coding-agent sessions. Finds detours and stale docs, proposes environment fixes that make the repo easier to navigate.
+description: Retro over a repo's recent coding-agent sessions. Finds detours, stale docs, and code that misleads agents (sprawling files, look-alike names, dead code); proposes fixes that make the repo easier to navigate.
 disable-model-invocation: true
 argument-hint: "[repo] [count]"
 arguments: repo count
@@ -8,7 +8,7 @@ arguments: repo count
 
 # Self-reflection
 
-A **retro** over the last few coding-agent sessions in one repository. The goal is a more navigable **environment**: every finding becomes a candidate change to the repo's pointers, docs, checks, or tooling, so the next session spends fewer tokens reaching the same place. The code the sessions produced is out of scope; that is a code review's job.
+A **retro** over the last few coding-agent sessions in one repository. The goal is a more navigable **environment**: every finding becomes a candidate change to the repo's pointers, docs, checks, tooling, or code layout, so the next session spends fewer tokens reaching the same place. Layout changes (splitting, renaming, deleting) are in scope; the logic the sessions wrote is a code review's job.
 
 Load the `writing-for-agents` skill, when available, before drafting any candidate that edits a steering file, doc, or skill.
 
@@ -39,6 +39,10 @@ Transcripts are sensitive: evidence quotes stay short, and secret-like values, t
 
 - **Detour**: the stretch of tool calls between the agent needing something (a file, a command, a convention) and first reaching it. Record the target, where it actually lived, the calls spent getting there (searches, reads, failed commands), and what the agent read on the way. Asking the user for something the repo holds, or rewriting code that already existed, is a detour that never arrived. A fact the user stopped to correct is the strongest signal.
 - **Stale doc**: the agent acted on a document (README, `AGENTS.md` / `CLAUDE.md`, `docs/`, a skill, a code comment) and the environment then contradicted it: a documented command failed, a path was missing, an API or flag had changed. Record the doc, the claim, and the contradicting evidence.
+- **Code layout**: a detour whose cause is the shape of the code itself.
+  - **Sprawling file**: the agent searched or paged through one large file repeatedly (reads at several offsets, searches scoped to it) before reaching the part it needed. Record the file and the reads and searches spent inside it.
+  - **Look-alike names**: two modules, files, or symbols with near-identical names (`user_service` / `users_service`, `utils/date` / `lib/dates`), and the agent opened, imported, or edited the wrong one first. Record both paths and where the agent switched.
+  - **Dead code**: a search led the agent into code nothing uses (no callers or importers, a superseded version, a deprecated path), and it read, traced, or edited that code. Record the path, how the search reached it, and what showed it was unused.
 
 When the session shows them, also record: a mistake an **automated check** could have caught, a mistake the **reviewer** missed, a tool call that returned far more than it was worth (**tool economy**), and information the agent needed but could not reach (**information access**).
 
@@ -48,7 +52,7 @@ Return format:
 {"findings": [{
   "session": "<file>",
   "agent": "claude-code | codex | <other>",
-  "lens": "detour | stale-doc | automated-check | reviewer | tool-economy | information-access",
+  "lens": "detour | stale-doc | sprawling-file | look-alike-names | dead-code | automated-check | reviewer | tool-economy | information-access",
   "target": "the file, fact, or command the agent was after",
   "what": "one specific sentence",
   "evidence": "short redacted quote or tool-call excerpt from the record",
@@ -66,7 +70,9 @@ Pool the findings and merge the ones that share a **target**, keeping the sessio
 - **Project-specific only.** Advice true in every repo for every agent ("write tests", read-before-edit) is dropped.
 - **Recurring pain first.** A struggle across several sessions outranks a single stumble.
 
-Done when every remaining finding has a distinct target and survives the filter.
+Code may have changed since the session, so confirm each code-layout finding against the current tree and drop what no longer holds: the file is still large, both look-alike names still exist, the dead code still has no callers or importers. For dead code, search its path and its exported symbols, including string references such as route tables, plugin registries, and config; a public API or a dynamically loaded module counts as used.
+
+Done when every remaining finding has a distinct target, survives the filter, and every code-layout finding is confirmed against the current tree.
 
 ### 4. Route each finding to its fix
 
@@ -74,6 +80,9 @@ Done when every remaining finding has a distinct target and survives the filter.
 | --- | --- |
 | Detour | A **navigation pointer** to the target from a file the agent already reads (`AGENTS.md` / `CLAUDE.md`, a README, the neighbouring module), or move/rename the target to where agents look first |
 | Stale doc | Correct the doc, or delete it when the environment already answers the question (`--help`, `package.json` scripts, config) |
+| Sprawling file | Split it along the seams the agent was searching for; when a split costs too much, an index of its sections at the top of the file |
+| Look-alike names | Rename one so its name says what sets it apart, or merge the two when they do the same job |
+| Dead code | Delete it. When it has to stay (a public API, a pending migration), mark it deprecated where search results show it: a `@deprecated` tag or a comment at the top of the file |
 | Automated check | A lint rule, type, test, pre-commit hook, or CI job. Read the repo's existing scripts and CI first: a check that exists but is unwired is the finding |
 | Reviewer | A rule in `CODING_STANDARDS.md` or the repo's equivalent, for judgement calls only; mechanical rules get a check |
 | Tool economy | Streamline or replace the tool |
@@ -83,6 +92,6 @@ Done when every remaining finding has a distinct target and survives the filter.
 
 ### 5. Present the candidates
 
-Present them in chat, most severe first, where severity is total cost across sessions. For each candidate give the fix, the file it touches, the evidence (session and quote), and the cost it would have saved. Close with the scope used: repo paths, agents, session count, and date range. A repo with nothing worth changing gets that said plainly.
+Present them in chat, most severe first, where severity is total cost across sessions. For each candidate give the fix, the file it touches, the evidence (session and quote), and the cost it would have saved. A code-layout candidate also gives its **blast radius**: the files that import, call, or link to what it splits, renames, or deletes. Close with the scope used: repo paths, agents, session count, and date range. A repo with nothing worth changing gets that said plainly.
 
 Propose only; apply a candidate once the user picks it.
