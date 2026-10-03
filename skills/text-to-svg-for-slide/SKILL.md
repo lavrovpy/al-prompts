@@ -9,7 +9,8 @@ description: >
   when the user needs to fix an existing SVG that renders with black boxes,
   missing colors, or invisible text due to missing embedded styles or CSS
   custom properties.
-version: 0.1.0
+metadata:
+  version: "0.1.0"
 ---
 
 # Text-to-SVG for Slides
