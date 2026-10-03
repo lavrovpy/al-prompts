@@ -12,12 +12,20 @@
     {
       "name": "alavreniuk-skills",
       "description": "Collection of language learning, translation, writing, interview preparation, education, and software engineering skills",
+      "author": {
+        "name": "Andrii Lavreniuk",
+        "email": "alo.andretti@gmail.com"
+      },
+      "homepage": "https://github.com/lavrovpy/al-prompts",
+      "repository": "https://github.com/lavrovpy/al-prompts",
+      "license": "MIT",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/agentic-readiness",
         "./skills/agentic-readiness-eugin",
         "./skills/agentic-readiness-serhii",
+        "./skills/ai-setup-audit",
         "./skills/codebase-study-plan",
         "./skills/editor",
         "./skills/experimental/duolingo-at-home",
