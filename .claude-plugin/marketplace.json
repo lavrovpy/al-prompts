@@ -15,6 +15,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/ai-setup-audit",
         "./skills/codebase-study-plan",
         "./skills/editor",
         "./skills/experimental/duolingo-at-home",

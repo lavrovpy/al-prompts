@@ -52,6 +52,8 @@ If you want to use skills with another tool, check that tool's documentation.
 
 ## Skill-only workflows
 
+- `skills/ai-setup-audit`: Audit every AI coding tool on the machine (Claude Code, Codex, Cursor, agent CLIs, IDE MCP configs): usage evidence, plaintext secrets, blanket permissions, broken skill chains, duplicated or drifted skills, context cost, stale versions, and leftovers. You approve each fix, it applies only those, then reports before/after. A read-only `scripts/inventory.py` does the mechanical survey.
+  - Example: Run `/ai-setup-audit` (or `/ai-setup-audit security only`); get a ranked DELETE / UPDATE / CHANGE / KEEP list with evidence, then a report of what changed.
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Inspect past AI coding-agent session transcripts and propose concise `AGENTS.md` / `CLAUDE.md` memory-file entries for durable, non-obvious project facts the agent learned through friction.
   - Example: Ask it to audit recent agent logs for a repo; get paste-ready memory-file lines for repeated command mistakes, hidden conventions, important paths, or environment gotchas.
