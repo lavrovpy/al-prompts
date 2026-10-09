@@ -53,8 +53,6 @@ After installing a skill in Codex, restart Codex to pick up new skills.
 
 ### Software Engineering & Agent Workflows
 
-- `skills/agentic-readiness`: Measure how ready a repository is for autonomous agent development by sending a probe agent to genuinely implement a feature in an isolated worktree, then reporting — with evidence — every place it was blocked, had to ask, guessed wrong, or wasted effort.
-  - Example: Run `/agentic-readiness "add another endpoint"`; get a phase-by-phase verdict (bootstrap, orient, locate, change, validate, land) plus paste-ready fixes for the missing docs, scripts, or lint rules behind each blocker.
 - `skills/ai-setup-audit`: Audit every AI coding tool on the machine (Claude Code, Codex, Cursor, agent CLIs, IDE MCP configs): usage evidence, plaintext secrets, blanket permissions, broken skill chains, duplicated or drifted skills, context cost, stale versions, and leftovers.
   - Example: Run `/ai-setup-audit` (or `/ai-setup-audit security only`); get a ranked DELETE / UPDATE / CHANGE / KEEP list with evidence, then approve fixes.
 - `skills/codebase-study-plan`: Senior architect-led codebase audit and tailored study roadmap to get productive in a specific repository and stack.

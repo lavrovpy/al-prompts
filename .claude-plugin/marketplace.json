@@ -22,7 +22,6 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/agentic-readiness",
         "./skills/ai-setup-audit",
         "./skills/codebase-study-plan",
         "./skills/duolingo-at-home",
