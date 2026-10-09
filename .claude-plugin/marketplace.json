@@ -5,13 +5,13 @@
     "email": "alo.andretti@gmail.com"
   },
   "metadata": {
-    "description": "Collection of language learning, translation, writing, interview preparation, and software engineering skills",
+    "description": "Collection of language learning, translation, writing, interview preparation, visual design, and software engineering skills",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "alavreniuk-skills",
-      "description": "Collection of language learning, translation, writing, interview preparation, education, and software engineering skills",
+      "description": "Collection of language learning, translation, writing, interview preparation, visual design, and software engineering skills",
       "author": {
         "name": "Andrii Lavreniuk",
         "email": "alo.andretti@gmail.com"
@@ -27,14 +27,14 @@
         "./skills/agentic-readiness-serhii",
         "./skills/ai-setup-audit",
         "./skills/codebase-study-plan",
+        "./skills/duolingo-at-home",
         "./skills/editor",
-        "./skills/experimental/duolingo-at-home",
-        "./skills/experimental/nmt-test",
         "./skills/foreign-language-a2-tutor",
         "./skills/intent-rich-pr",
         "./skills/interview-coach",
         "./skills/interview-questions-creator",
         "./skills/interview-scorecard",
+        "./skills/language-learning-infographic",
         "./skills/notes-verification",
         "./skills/pr-batch-triage",
         "./skills/quick-grammar-check",
