@@ -23,8 +23,6 @@
       "strict": false,
       "skills": [
         "./skills/agentic-readiness",
-        "./skills/agentic-readiness-eugin",
-        "./skills/agentic-readiness-serhii",
         "./skills/ai-setup-audit",
         "./skills/codebase-study-plan",
         "./skills/duolingo-at-home",
