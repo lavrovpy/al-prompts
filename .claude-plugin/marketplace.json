@@ -23,6 +23,7 @@
       "strict": false,
       "skills": [
         "./skills/ai-setup-audit",
+        "./skills/boil-the-ocean",
         "./skills/codebase-study-plan",
         "./skills/editor",
         "./skills/experimental/duolingo-at-home",
