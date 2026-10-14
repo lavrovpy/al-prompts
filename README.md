@@ -1,6 +1,6 @@
 A personal library of [Agent Skills](https://agentskills.io/specification) for software engineering, writing, interview prep, translation, language learning, and visual design.
 
-Each tool in this repository is packaged as an [Agent Skill](https://agentskills.io/specification) containing a `SKILL.md` instruction file, installable directly into modern agent environments and AI coding tools.
+Each tool under `skills/` is packaged as an [Agent Skill](https://agentskills.io/specification) containing a `SKILL.md` instruction file, installable directly into modern agent environments and AI coding tools. `prompts/` holds plain prompts for tools that are not coding agents (voice-mode chat, image models).
 
 ## Installing Skills
 
@@ -22,7 +22,7 @@ Add the marketplace and install the plugin:
 /plugin install alavreniuk-skills@alavreniuk-skills
 ```
 
-After installation, skills are available as slash commands namespaced by the plugin (e.g. `/alavreniuk-skills:interview-questions-creator`; the bare `/interview-questions-creator` also works when no other command uses that name).
+After installation, skills are available as slash commands namespaced by the plugin (e.g. `/alavreniuk-skills:study-questions`; the bare `/study-questions` also works when no other command uses that name).
 
 Third-party marketplaces don't auto-update by default. To update, run `/plugin`, open the **Marketplaces** tab, select `alavreniuk-skills`, and choose **Update marketplace** (or **Enable auto-update** to keep it current). From a shell:
 
@@ -47,6 +47,8 @@ Or use a GitHub URL:
 
 After installing a skill in Codex, restart Codex to pick up new skills.
 
+Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argument-hint`, `arguments`, `user-invocable`). Codex ignores these fields; uploading such a skill to claude.ai fails until they are removed, since only `name`, `description`, `license`, `compatibility`, `metadata`, and `allowed-tools` are portable.
+
 ---
 
 ## Skills Catalog
@@ -60,37 +62,25 @@ After installing a skill in Codex, restart Codex to pick up new skills.
 - `skills/codebase-study-plan`: Senior architect-led codebase audit and tailored study roadmap to get productive in a specific repository and stack.
   - Example: Point it at your repo; get an evidence-based audit with code anchors and a week-by-week learning plan tied to real examples in the codebase.
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
-- `skills/pr-batch-triage`: Rapid first-pass evaluation of a batch of incoming pull requests, categorized by risk and complexity so human review time goes where it matters most.
-  - Example: Point it at a backlog of open PRs; get them bucketed by risk and complexity with a recommended review order.
 - `skills/self-reflection`: Retro over a repo's last coding-agent sessions (Claude Code and Codex, worktrees included). Finds detours, where an agent took too long to reach a file, command, or convention; stale docs it trusted; and code that misleads agents (sprawling files, look-alike module names, dead code). Proposes targeted navigational fixes and refactors.
   - Example: Run `/self-reflection` in a repo; get candidates ranked by how many tool calls each would have saved.
 
 ### Writing & Editing
 
-- `skills/editor`: Senior English editor and writing coach for polishing professional text (emails, Slack messages, documents) for clarity, tone, and grammar.
-  - Example: Provide draft text; receive an edited version, a detailed change rationale, and an overall rating.
-- `skills/quick-grammar-check`: Fast grammar, spelling, and consistency check.
-  - Example: Provide a sentence; receive "Correct." or a fix with a concise explanation.
+- `skills/editor`: Senior English editor and writing coach for polishing professional text (emails, Slack messages, documents) for clarity, tone, and grammar. Keeps a log of your recurring mistakes in `~/writing-log.md` and flags repeat offenders.
+  - Example: Provide draft text; receive an edited version, a change rationale, the patterns you keep repeating, and an overall rating. Ask "how am I doing?" for a progress summary.
 
 ### Interview Preparation
 
 - `skills/interview-coach`: FAANG-style interview coach for constructive feedback and scoring on technical interview answers.
   - Example: Provide an interview question and your answer; get an evaluation, score, strengths, and areas for improvement.
-- `skills/interview-questions-creator`: FAANG-style interviewer that generates high-signal technical questions based strictly on provided source materials.
-  - Example: Attach a design doc or study notes; receive 5–7 deep-dive questions probing understanding and trade-offs.
 - `skills/interview-scorecard`: Technical recruiter assistant that turns raw shorthand interview notes into a structured internal scorecard with a clear hiring recommendation.
   - Example: Paste rough interview notes; get an objective breakdown of strengths, gaps, seniority calibration, and pass/fail decision.
 
 ### Translation & Language Learning
 
-- `skills/foreign-language-a2-tutor`: Patient conversational language tutor for A2–B1 learners with gentle inline corrections, vocabulary building, and an end-of-session summary.
+- `skills/foreign-language-a2-tutor`: Patient conversational language tutor for A2–B1 learners in any target language, with gentle inline corrections, vocabulary building, and an end-of-session summary. For Polish it also watches for Ukrainian-to-Polish false friends and preposition traps.
   - Example: Chat in your target language; receive natural conversational replies with inline corrections and new vocabulary.
-- `skills/foreign-language-writing`: Polish language writing and conversation tutor for Ukrainian speakers at A2–B1 level, monitoring for Slavic false friends and Ukrainianisms with XML-tagged feedback.
-  - Example: Write in Polish; receive conversational replies along with diagnostic grammar feedback and vocabulary expansion.
-- `skills/duolingo-at-home`: Simulated video call language practice with a sarcastic teenage character named Lily.
-  - Example: Start a conversation in your target language at A2 level; practice casual conversation without formal lecturing.
-- `skills/language-learning-infographic`: Illustrated vocabulary infographic poster generator in a polished textbook style.
-  - Example: Set target language, native language, and topic (e.g., cafe); approve the copy deck, then generate a 16:9 poster.
 - `skills/translator-en-ukr`: English ↔ Ukrainian translator with nuance notes, tone detection, and context awareness.
   - Example: Provide text in English or Ukrainian; receive fluent translations with polysemy and tone notes.
 
@@ -102,7 +92,12 @@ After installing a skill in Codex, restart Codex to pick up new skills.
 
 - `skills/notes-verification`: Academic verifier that audits study notes for factual accuracy and rewrites them into high-density, easily memorizable study materials.
   - Example: Paste study notes; receive a factual verification report and a restructured, high-signal version.
-- `skills/study-questions`: Generate closed-book study questions from course material and record an answer key in a `study-log.md` next to the material. Serves questions due for review before new ones.
+- `skills/study-questions`: Generate closed-book study questions from course material and record an answer key in a `study-log.md` next to the material. Serves questions due for review before new ones. Also has an interview mode: FAANG-style questions from any technical material, no log.
   - Example: Point it at a course module; get 5–7 questions (how, why, compare, apply, find the error) plus a line listing concepts not covered this round.
 - `skills/study-coach`: Grade answers to study questions against course material, quote the source for each correction, and schedule the next review in `study-log.md` (1, 3, 7, 21 days).
   - Example: Give it a question ID and your answer; get a score, hints on the first attempt, and the full answer with source quote after the second.
+
+### Prompts (not skills)
+
+- `prompts/duolingo-at-home.md`: "Video call with Lily", a sarcastic teenage character for CEFR A2 conversation practice. Written for voice-mode chat apps; paste it as a system prompt.
+- `prompts/language-learning-infographic.md`: Illustrated vocabulary poster generator in textbook style. Written for image models; approve the copy deck, then generate a 16:9 poster.
