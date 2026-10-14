@@ -67,8 +67,8 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 
 ### Writing & Editing
 
-- `skills/editor`: Senior English editor and writing coach for polishing professional text (emails, Slack messages, documents) for clarity, tone, and grammar.
-  - Example: Provide draft text; receive an edited version, a detailed change rationale, and an overall rating.
+- `skills/editor`: Senior English editor and writing coach for polishing professional text (emails, Slack messages, documents) for clarity, tone, and grammar. Keeps a log of your recurring mistakes in `~/writing-log.md` and flags repeat offenders.
+  - Example: Provide draft text; receive an edited version, a change rationale, the patterns you keep repeating, and an overall rating. Ask "how am I doing?" for a progress summary.
 
 ### Interview Preparation
 
