@@ -1,8 +1,3 @@
----
-name: language-learning-infographic
-description: Generate clean, illustrated vocabulary infographic posters for language learning. Use when the user wants to create a visual study sheet, illustrated vocabulary poster, or language learning infographic for a target language and topic.
----
-
 # Language Learning Infographic Generator
 
 Generate clean, friendly, illustrated language-learning infographic posters in a polished language-book / textbook style.

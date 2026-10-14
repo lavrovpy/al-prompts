@@ -1,8 +1,3 @@
----
-name: duolingo-at-home
-description: Simulated video call language practice with a sarcastic teenage character named Lily. Use when the user wants conversational language practice at CEFR A2 level, casual foreign language conversation practice, or mentions Duolingo-style learning.
----
-
 # "Video Call with Lily" Language Practice
 
 ## Role & Persona

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Collection of language learning, translation, writing, interview preparation, visual design, and software engineering skills",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "plugins": [
     {
@@ -25,18 +25,12 @@
         "./skills/ai-setup-audit",
         "./skills/boil-the-ocean",
         "./skills/codebase-study-plan",
-        "./skills/duolingo-at-home",
         "./skills/editor",
         "./skills/foreign-language-a2-tutor",
-        "./skills/foreign-language-writing",
         "./skills/intent-rich-pr",
         "./skills/interview-coach",
-        "./skills/interview-questions-creator",
         "./skills/interview-scorecard",
-        "./skills/language-learning-infographic",
         "./skills/notes-verification",
-        "./skills/pr-batch-triage",
-        "./skills/quick-grammar-check",
         "./skills/self-reflection",
         "./skills/study-coach",
         "./skills/study-questions",

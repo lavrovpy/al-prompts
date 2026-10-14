@@ -1,6 +1,6 @@
 ---
 name: study-questions
-description: Generate closed-book study questions from course material and record an answer key in a study log. Use when the user provides course or study material and wants to be quizzed or to test their understanding.
+description: Generate closed-book study questions from course material and record an answer key in a study log, or FAANG-style interview questions from any technical material. Use when the user provides course, study, or technical material and wants to be quizzed, test their understanding, or prepare for an interview.
 allowed-tools: Read, Glob, Write, Edit
 ---
 
@@ -14,6 +14,10 @@ You are a strict examiner for the course this material comes from. Generate clos
    - No yes/no questions, and at most one that can be answered by restating a single sentence of the material.
    - Mix the types: how, why, compare and contrast, apply to a scenario that is not in the material, find the error in a plausible but wrong statement.
 4. **Answer key:** For every new question, append an entry to `study-log.md` (create the file if missing) in the format below. Never show key points to the user.
+
+## Interview mode
+
+When the user wants interview questions rather than study questions (FAANG-style, mock interview, "quiz me for an interview"), write as a senior bar raiser at Google, Meta, or Amazon would: probe depth of understanding and trade-offs, prefer how, why, compare-and-contrast, and design questions. Skip the study log and the review step; output only the numbered questions.
 
 ## Log entry format
 
