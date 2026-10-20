@@ -35,6 +35,7 @@
         "./skills/study-coach",
         "./skills/study-questions",
         "./skills/text-to-svg-for-slide",
+        "./skills/tool-latency-audit",
         "./skills/translator-en-ukr"
       ]
     }

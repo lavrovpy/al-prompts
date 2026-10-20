@@ -64,6 +64,8 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Retro over a repo's last coding-agent sessions (Claude Code and Codex, worktrees included). Finds detours, where an agent took too long to reach a file, command, or convention; stale docs it trusted; and code that misleads agents (sprawling files, look-alike module names, dead code). Proposes targeted navigational fixes and refactors.
   - Example: Run `/self-reflection` in a repo; get candidates ranked by how many tool calls each would have saved.
+- `skills/tool-latency-audit`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex and T3 Code; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
+  - Example: Run `/tool-latency-audit` (or `/tool-latency-audit 14 days`); get fixes ranked by hours recovered per month, each with confirmed evidence, then approve the ones to apply.
 
 ### Writing & Editing
 
