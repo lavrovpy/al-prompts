@@ -1,3 +1,4 @@
 .claude/settings.local.json
 .agents/
 .DS_Store
+__pycache__/

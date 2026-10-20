@@ -22,6 +22,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/agent-tool-call-latency",
         "./skills/ai-setup-audit",
         "./skills/boil-the-ocean",
         "./skills/codebase-study-plan",
