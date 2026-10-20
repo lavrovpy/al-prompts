@@ -4,7 +4,6 @@ It claims the backend calls it started, so they are labelled "T3 Code → <agent
 Codex records T3 as its originator; Claude sessions are matched from T3's provider event logs,
 its turn-item projection, and its worktree paths.
 """
-import glob
 import os
 import re
 import sqlite3
@@ -19,10 +18,17 @@ def _root(ctx):
     return ctx.path(".t3", "userdata")
 
 
+def _event_logs(root):
+    logs = os.path.join(root, "logs", "provider")
+    if not os.path.isdir(logs):
+        return []
+    return [os.path.join(logs, name) for name in sorted(os.listdir(logs)) if name.startswith("events")]
+
+
 def detect(ctx):
     root = _root(ctx)
-    return [p for p in [os.path.join(root, "statev2.sqlite")] + glob.glob(os.path.join(root, "logs", "provider", "events.*"))
-            if os.path.exists(p)]
+    db = os.path.join(root, "statev2.sqlite")
+    return ([db] if os.path.exists(db) else []) + _event_logs(root)
 
 
 def records(ctx):
@@ -31,7 +37,7 @@ def records(ctx):
 
 def claims(ctx):
     root = _root(ctx)
-    for f in glob.glob(os.path.join(root, "logs", "provider", "events.*")):
+    for f in _event_logs(root):
         with open(f, errors="ignore") as fh:
             for sid in set(SESSION_RE.findall(fh.read())):
                 yield dict(frontend=FRONTEND, session=sid)
