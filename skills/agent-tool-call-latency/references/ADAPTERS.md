@@ -24,11 +24,11 @@ def claims(ctx):               # optional, for a frontend that drives other agen
 ## Finding the history
 
 1. **Prefer a documented export.** Some harnesses have a CLI or API that exports sessions; it survives format changes better than internal files.
-2. **Otherwise make the harness point at its own files.** In the harness, run one call with a distinctive marker, for example the shell command `echo tla-marker-7319`. Then list what changed in the last few minutes and search it for the marker:
+2. **Otherwise make the harness point at its own files.** In the harness, run one call with a distinctive marker, for example the shell command `echo latency-marker-7319`. Then list what changed in the last few minutes and search it for the marker:
 
    ```sh
    find ~ -newermt '-5 minutes' -type f \( -name '*.json*' -o -name '*.db' -o -name '*.sqlite*' -o -name '*.log' \) \
-     -not -path '*/node_modules/*' 2>/dev/null | xargs grep -l 'tla-marker-7319' 2>/dev/null
+     -not -path '*/node_modules/*' 2>/dev/null | xargs grep -l 'latency-marker-7319' 2>/dev/null
    ```
 
    SQLite files need a query, not grep: open them read-only (`sqlite3 'file:<path>?mode=ro'`) and search the text columns. Usual roots: `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/Library/Application Support/<Name>` on macOS, `%APPDATA%` on Windows.
@@ -56,7 +56,7 @@ These come from bugs found in real logs; each one silently skews the totals.
 
 ## Capturing with hooks
 
-When a harness's history has no per-call timestamps, record calls from now on instead. Most harnesses can run a command before and after each tool call; wire both to `scripts/hook_capture.py`, which writes `~/.cache/tool-latency-audit/hooks.jsonl` (or `$TOOL_LATENCY_HOOK_LOG`), and the `hooklog` adapter pairs the lines. For Claude Code the wiring in `settings.json` is:
+When a harness's history has no per-call timestamps, record calls from now on instead. Most harnesses can run a command before and after each tool call; wire both to `scripts/hook_capture.py`, which writes `~/.cache/agent-tool-call-latency/hooks.jsonl` (or `$AGENT_LATENCY_HOOK_LOG`), and the `hooklog` adapter pairs the lines. For Claude Code the wiring in `settings.json` is:
 
 ```json
 {"hooks": {

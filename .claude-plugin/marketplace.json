@@ -22,6 +22,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/agent-tool-call-latency",
         "./skills/ai-setup-audit",
         "./skills/boil-the-ocean",
         "./skills/codebase-study-plan",
@@ -35,7 +36,6 @@
         "./skills/study-coach",
         "./skills/study-questions",
         "./skills/text-to-svg-for-slide",
-        "./skills/tool-latency-audit",
         "./skills/translator-en-ukr"
       ]
     }

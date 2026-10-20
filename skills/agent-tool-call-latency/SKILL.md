@@ -1,17 +1,17 @@
 ---
-name: tool-latency-audit
+name: agent-tool-call-latency
 description: Measure every agent tool call on this machine from local session history, in any harness, find where the time goes, and rank fixes for slow commands, harness overhead and wasted waiting.
 disable-model-invocation: true
 argument-hint: "[window, e.g. '14 days'; or a harness or project to focus on]"
 ---
 
-# Tool latency audit
+# Agent tool-call latency
 
 An **audit** of how long the agent's tool calls take, across every harness the user runs (CLI agents, desktop apps, frontends that drive other agents), measured from the user's own session history. It runs as **inventory**, **measure**, **diagnose**, **decisions** (the user rules on each fix), **execution** (approved fixes only) and **report**.
 
 The skill's scripts are harness-neutral: adapters turn each harness's history into one [call record](references/SCHEMA.md) format, and everything after extraction reads only that format. A harness without a built-in adapter gets one written during the inventory.
 
-Work in `~/.cache/tool-latency-audit/<today>/` (the **work directory**); `<skill>` below is this file's folder. The default window is 30 days; an argument narrows the window, the harnesses or the projects, and the phases stay the same.
+Work in `~/.cache/agent-tool-call-latency/<today>/` (the **work directory**); `<skill>` below is this file's folder. The default window is 30 days; an argument narrows the window, the harnesses or the projects, and the phases stay the same.
 
 ## Guardrails
 
@@ -19,7 +19,7 @@ Work in `~/.cache/tool-latency-audit/<today>/` (the **work directory**); `<skill
 - **Records stay local.** `calls.jsonl` holds commands, with secrets masked. It stays in the work directory; the report names command patterns, not full commands.
 - **Causes are confirmed before they are ranked.** An entry in [CAUSES.md](references/CAUSES.md) is a hypothesis until this run confirms it on this machine with a benchmark, the harness's current documentation, a `path:line` in the repository, or the raw log.
 - **Fixes remove waste.** Queueing, overhead, repeated start-up, killed and re-run work, foreground waiting, and tests the change cannot affect are waste. A change that makes a check prove less is not a fix.
-- **The audit's own sessions are excluded.** Benchmarks run under `/tmp/tla-bench/`, which every extraction passes to `--exclude-cwd`.
+- **The audit's own sessions are excluded.** Benchmarks run under `/tmp/agent-latency-bench/`, which every extraction passes to `--exclude-cwd`.
 
 ## Phase 1: Inventory
 
@@ -31,7 +31,7 @@ Done when every harness with history in the window has an adapter that meets [AD
 
 ## Phase 2: Measure
 
-1. Extract: `python3 <skill>/scripts/extract.py --since <first day> --out <work directory>/calls.jsonl --exclude-cwd /tla-bench/ [--adapter <file> ...]`.
+1. Extract: `python3 <skill>/scripts/extract.py --since <first day> --out <work directory>/calls.jsonl --exclude-cwd /agent-latency-bench/ [--adapter <file> ...]`.
 2. Validate: `python3 <skill>/scripts/validate_calls.py <work directory>/calls.jsonl`. A schema error or an unexplained WARN sends you back to the adapter.
 3. Aggregate: `python3 <skill>/scripts/aggregate.py <work directory>/calls.jsonl --out-dir <work directory>` and read `summary.md`.
 4. Name the unnamed buckets. For each family in *Unnamed shell commands* above 1 h, read its commands, add a `[category, label, regex]` row to `<work directory>/patterns.json`, and re-run step 3 with `--patterns`.
@@ -61,7 +61,7 @@ Then stop for the user's rulings. A fix the user does not approve stays untouche
 
 Apply the approved fixes:
 
-- **Agent environment** (settings, rules, global instructions): back up the file (`<file>.pre-tla`), edit it, confirm the harness still loads it, and re-run the benchmark when the fix targets overhead.
+- **Agent environment** (settings, rules, global instructions): back up the file (`<file>.pre-latency-audit`), edit it, confirm the harness still loads it, and re-run the benchmark when the fix targets overhead.
 - **Repository:** follow the repository's own workflow: a branch, its checks, and a pull request per repository.
 
 When an approved fix turns out unsafe as stated, apply the safe subset and record the deviation.

@@ -9,7 +9,7 @@ NAME = "hooklog"
 
 
 def _path():
-    return os.environ.get("TOOL_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/tool-latency-audit/hooks.jsonl")
+    return os.environ.get("AGENT_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/agent-tool-call-latency/hooks.jsonl")
 
 
 def detect(ctx):

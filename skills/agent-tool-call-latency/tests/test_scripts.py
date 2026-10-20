@@ -1,4 +1,4 @@
-"""Run: python3 -m unittest discover -s skills/tool-latency-audit/tests"""
+"""Run: python3 -m unittest discover -s skills/agent-tool-call-latency/tests"""
 import json
 import os
 import sqlite3
@@ -145,7 +145,7 @@ class Adapters(unittest.TestCase):
 
     def test_hook_capture_pairs_pre_and_post(self):
         log = os.path.join(self.home, "hooks.jsonl")
-        env = dict(os.environ, TOOL_LATENCY_HOOK_LOG=log)
+        env = dict(os.environ, AGENT_LATENCY_HOOK_LOG=log)
         for event in ("pre", "post"):
             payload = json.dumps(dict(session_id="s", tool_name="Bash", tool_use_id="h1", tool_input=dict(command="ls")))
             subprocess.run([sys.executable, os.path.join(SCRIPTS, "hook_capture.py"), event, "--agent", "X"],
@@ -159,7 +159,7 @@ class Adapters(unittest.TestCase):
     def test_hook_capture_never_fails_the_tool(self):
         result = subprocess.run([sys.executable, os.path.join(SCRIPTS, "hook_capture.py"), "pre"], input="not json",
                                 text=True, capture_output=True,
-                                env=dict(os.environ, TOOL_LATENCY_HOOK_LOG="/nonexistent/dir/x.jsonl"))
+                                env=dict(os.environ, AGENT_LATENCY_HOOK_LOG="/nonexistent/dir/x.jsonl"))
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
     def test_validator_rejects_bad_records(self):

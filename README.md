@@ -55,6 +55,11 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 
 ### Software Engineering & Agent Workflows
 
+- `skills/agent-tool-call-latency`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex and T3 Code; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
+  - Example: Run `/agent-tool-call-latency` (or `/agent-tool-call-latency 14 days`); get fixes ranked by hours recovered per month, each with confirmed evidence, then approve the ones to apply.
+
+### Writing & Editing
+
 - `skills/ai-setup-audit`: Audit every AI coding tool on the machine (Claude Code, Codex, Cursor, agent CLIs, IDE MCP configs): usage evidence, plaintext secrets, blanket permissions, broken skill chains, duplicated or drifted skills, context cost, stale versions, and leftovers.
   - Example: Run `/ai-setup-audit` (or `/ai-setup-audit security only`); get a ranked DELETE / UPDATE / CHANGE / KEEP list with evidence, then approve fixes.
 - `skills/boil-the-ocean`: Hunt for performance wins at every layer, from algorithms to hardware to the requirement itself, extreme measures included. Measures a baseline, profiles, then returns three proposals differing in kind, each with expected gain, cost, and a first step.
@@ -64,11 +69,6 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 - `skills/intent-rich-pr`: Create GitHub pull requests with descriptions that preserve motivation, issue/ticket links, reviewer-facing decision rationale, diff summary, and validation context.
 - `skills/self-reflection`: Retro over a repo's last coding-agent sessions (Claude Code and Codex, worktrees included). Finds detours, where an agent took too long to reach a file, command, or convention; stale docs it trusted; and code that misleads agents (sprawling files, look-alike module names, dead code). Proposes targeted navigational fixes and refactors.
   - Example: Run `/self-reflection` in a repo; get candidates ranked by how many tool calls each would have saved.
-- `skills/tool-latency-audit`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex and T3 Code; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
-  - Example: Run `/tool-latency-audit` (or `/tool-latency-audit 14 days`); get fixes ranked by hours recovered per month, each with confirmed evidence, then approve the ones to apply.
-
-### Writing & Editing
-
 - `skills/editor`: Senior English editor and writing coach for polishing professional text (emails, Slack messages, documents) for clarity, tone, and grammar. Keeps a log of your recurring mistakes in `~/writing-log.md` and flags repeat offenders.
   - Example: Provide draft text; receive an edited version, a change rationale, the patterns you keep repeating, and an overall rating. Ask "how am I doing?" for a progress summary.
 

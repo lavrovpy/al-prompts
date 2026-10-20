@@ -8,7 +8,7 @@ Wire it as the harness's pre-tool and post-tool hook (references/ADAPTERS.md § 
 
 The hook payload is read from stdin as JSON; field names vary by harness, so several spellings are
 tried. The script never blocks the tool: it prints nothing, swallows every error, and exits 0.
-Lines go to $TOOL_LATENCY_HOOK_LOG, default ~/.cache/tool-latency-audit/hooks.jsonl.
+Lines go to $AGENT_LATENCY_HOOK_LOG, default ~/.cache/agent-tool-call-latency/hooks.jsonl.
 """
 import json
 import os
@@ -61,7 +61,7 @@ def main():
             "project": os.path.basename(str(pick(payload, "cwd") or os.getcwd())),
             "command": clip(command, COMMAND_MAX) if command else None,
             "error": bool(payload.get("error") or payload.get("is_error"))}
-    path = os.environ.get("TOOL_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/tool-latency-audit/hooks.jsonl")
+    path = os.environ.get("AGENT_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/agent-tool-call-latency/hooks.jsonl")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a") as fh:
         fh.write(json.dumps({k: v for k, v in line.items() if v is not None}) + "\n")
