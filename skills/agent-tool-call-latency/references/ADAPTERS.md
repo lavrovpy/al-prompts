@@ -56,7 +56,7 @@ These come from bugs found in real logs; each one silently skews the totals.
 
 ## Capturing with hooks
 
-When a harness's history has no per-call timestamps, record calls from now on instead. Most harnesses can run a command before and after each tool call; wire both to `scripts/hook_capture.py`, which writes `~/.cache/agent-tool-call-latency/hooks.jsonl` (or `$AGENT_LATENCY_HOOK_LOG`), and the `hooklog` adapter pairs the lines. For Claude Code the wiring in `settings.json` is:
+When a harness's history has no per-call timestamps, start recording its calls live instead. Most harnesses can run a command before and after each tool call; wire both to `scripts/hook_capture.py`, which writes `~/.cache/agent-tool-call-latency/hooks.jsonl` (or `$AGENT_LATENCY_HOOK_LOG`), and the `hooklog` adapter pairs the lines. For Claude Code the wiring in `settings.json` is:
 
 ```json
 {"hooks": {
