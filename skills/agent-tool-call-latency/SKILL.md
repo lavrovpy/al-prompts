@@ -27,7 +27,11 @@ Work in `~/.cache/agent-tool-call-latency/<today>/` (the **work directory**); `<
 2. Find the harnesses they miss. Check the installed agent CLIs and apps (`ls /Applications`, `command -v` for agent CLIs, dot-directories in `~` that hold sessions), and keep those whose history changed inside the window.
 3. Write an adapter for each one, following [ADAPTERS.md](references/ADAPTERS.md), into `<work directory>/adapters/`.
 
-Done when every harness with history in the window has an adapter that meets [ADAPTERS.md § Done when](references/ADAPTERS.md#done-when), or a recorded reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4.
+Done when every harness with history in the window has one of:
+
+- an adapter that meets [ADAPTERS.md § Done when](references/ADAPTERS.md#done-when);
+- a recorded reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4;
+- a recorded call count under 1% of the other harnesses' calls, which the report lists under *Not measured*.
 
 ## Phase 2: Measure
 
@@ -36,7 +40,7 @@ Done when every harness with history in the window has an adapter that meets [AD
 3. Aggregate: `python3 <skill>/scripts/aggregate.py <work directory>/calls.jsonl --out-dir <work directory>` and read `summary.md`.
 4. Name the unnamed buckets. For each family in *Unnamed shell commands* above 1 h, read its commands, add a `[category, label, regex]` row to `<work directory>/patterns.json`, and re-run step 3 with `--patterns`.
 
-Done when no unnamed command family above 1 h is left.
+Done when every family above 1 h is named by a pattern, or explained in one line of the report (for example, one-off inline scripts with a sub-second median).
 
 ## Phase 3: Diagnose
 
@@ -68,13 +72,20 @@ When an approved fix turns out unsafe as stated, apply the safe subset and recor
 
 ## Phase 6: Report
 
-Write `<work directory>/report.md`; if the user's instructions set a visual style, follow it for any rendered version. In order:
+Write `<work directory>/report.md`, titled `# Agent tool-call latency — <machine, described generically>`, with these numbered sections in order. If the user's instructions set a visual style, follow it for any rendered version.
 
-1. **Headline:** tool time in the window, the hours the fixes recover, and the top three fixes.
-2. **Where the time goes:** the harness and category tables, trimmed to the rows a fix or a verdict refers to.
-3. **Fixes, ranked:** for each, where it applies, hours per month, the evidence, how the cause was confirmed, the change, its owner, its status (applied, approved, declined), and the row of the next audit that will show whether it worked.
-4. **Ruled out:** each cause checked and rejected, one line with its evidence.
-5. **Not measured:** harnesses or periods without timing, and which conclusions that leaves uncertain.
-6. **Corrections to CAUSES.md:** entries this run confirmed (new date), corrected, or added, written as replacement text.
+1. **Verdict:** one paragraph: tool time and calls in the window, the waste range, the largest waste by fix ID, and the largest one still open.
+2. **Run and Scope:** one fenced yaml block: `audited_by`, `plugin_version` (the `version` of the plugin manifest that ships this skill, or `unknown`), `started`, `completed`, `window`, `platform`, `clients` (records and adapter per client), `not_extracted`, `excluded`, `calls`, `tool_hours`, `waste_hours`, `fixes` (count per status), `work_directory`.
+3. **Glossary:** tool time, need, waste, at cap, approval path, p50 / p90, `F-nn`.
+4. **Where the time goes:** the overall p50, p90 and calls over 30 s; the client table; the category table, with a need or waste verdict per row that names its fix IDs.
+5. **What to Fix:** an index table (`ID | Waste in the window | Owner | Status | The next audit shows it worked when`), then one `### F-nn` record per fix, ranked by recoverable hours, with each field as a bullet: **Problem**, **Evidence**, **Cause** (and how it was confirmed), **Fix**, **Owner**, **Status** (applied, approved, proposed, needs investigation, declined; for an applied fix, its early effect), **Verify**.
+6. **Same operation, different client:** cheap operations' p50 / p90 per client, with one line per gap that names its cause or its fix ID.
+7. **Patterns by total time:** the top patterns with hours, calls, p50, p90, calls at cap and where they ran; then one line on MCP servers.
+8. **Ruled out:** each cause checked and rejected, with its evidence.
+9. **Confidence and limits:** what timing each client's numbers rest on, how much data the early effects rest on, and what was not measured.
+10. **Commands Executed:** the extraction, validation and aggregation commands, any queries used to build an adapter, and their results.
+11. **Corrections to CAUSES.md:** entries this run confirmed, corrected or added, as replacement text.
 
-Close by saying when to re-run: after a week of normal use, with `--since` set to the day after the last fix landed, comparing the same rows.
+Close with when to re-run (after a week of normal use, with `--since` set to the day after the last fix landed, comparing the rows named in the *Verify* fields).
+
+Name repositories by what they are (a desktop app, a 3D game), not by their names, and write paths relative to the repository or home directory, so the report can be shared without exposing the machine.

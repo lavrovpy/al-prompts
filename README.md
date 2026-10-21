@@ -55,7 +55,7 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 
 ### Software Engineering & Agent Workflows
 
-- `skills/agent-tool-call-latency`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex and T3 Code; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
+- `skills/agent-tool-call-latency`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex, T3 Code, Cursor and Antigravity; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
   - Example: Run `/agent-tool-call-latency` (or `/agent-tool-call-latency 14 days`); get fixes ranked by hours recovered per month, each with confirmed evidence, then approve the ones to apply.
 
 ### Writing & Editing
