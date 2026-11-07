@@ -36,7 +36,8 @@
         "./skills/study-coach",
         "./skills/study-questions",
         "./skills/text-to-svg-for-slide",
-        "./skills/translator-en-ukr"
+        "./skills/translator-en-ukr",
+        "./skills/whiteboard"
       ]
     }
   ]
