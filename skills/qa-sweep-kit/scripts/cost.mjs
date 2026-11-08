@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Estimates API-list-price cost of Claude Code transcripts.
-// Usage: node cost.mjs <label>=<file-or-dir> [...]   (dirs: every agent-*.jsonl inside, grouped by .meta.json description)
+// Usage: node cost.mjs <label>=<file-or-dir> [...]   (dirs: every agent-*.jsonl inside, summed per .meta.json description)
 // Usage lines are deduplicated by message id: Claude Code logs one line per content block with identical usage.
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -36,31 +36,41 @@ function add(acc, { model, usage: u }) {
   a.w1h += w1h; a.w5 += cc.ephemeral_5m_input_tokens ?? Math.max(0, (u.cache_creation_input_tokens ?? 0) - w1h);
 }
 function dollars(acc) {
-  let total = 0; const per = {};
+  let total = 0; const per = {}; const unpriced = {};
   for (const [model, a] of Object.entries(acc)) {
-    const p = PRICES[model]; if (!p) { per[model] = { ...a, usd: null }; continue; }
+    const p = PRICES[model]; if (!p) { unpriced[model] = a; continue; }
     const usd = (a.in * p.in + a.out * p.out + a.w5 * p.w5 + a.w1h * p.w1h + a.read * p.read) / 1e6;
     per[model] = { ...a, usd: +usd.toFixed(2), parts: { input: +(a.in * p.in / 1e6).toFixed(2), output: +(a.out * p.out / 1e6).toFixed(2), cacheWrite: +((a.w5 * p.w5 + a.w1h * p.w1h) / 1e6).toFixed(2), cacheRead: +(a.read * p.read / 1e6).toFixed(2) } };
     total += usd;
   }
-  return { total: +total.toFixed(2), per };
+  total = +total.toFixed(2);
+  return Object.keys(unpriced).length ? { total_priced_models_only: total, unpriced, per } : { total, per };
+}
+function warnUnpriced(label, acc) {
+  for (const [model, a] of Object.entries(acc)) {
+    if (PRICES[model]) continue;
+    console.error(`cost.mjs: ${label}: no price for ${model} (${a.calls} calls; tokens: ${a.in} input, ${a.out} output, ${a.w5 + a.w1h} cache write, ${a.read} cache read). The total covers priced models only; add this model's list price to PRICES.`);
+  }
 }
 
 const report = {};
 for (const arg of process.argv.slice(2)) {
   const [label, path] = arg.split("=");
+  const all = {};
   if (statSync(path).isDirectory()) {
-    const groups = {};
+    const byDesc = {}, transcripts = {};
     for (const f of readdirSync(path).filter((f) => /^agent-.*\.jsonl$/.test(f))) {
       const metaPath = join(path, f.replace(/\.jsonl$/, ".meta.json"));
       const desc = existsSync(metaPath) ? JSON.parse(readFileSync(metaPath, "utf8")).description : f;
-      const acc = {}; usageOf(join(path, f)).forEach((u) => add(acc, u));
-      groups[desc] = dollars(acc);
+      const acc = (byDesc[desc] ??= {});
+      transcripts[desc] = (transcripts[desc] ?? 0) + 1;
+      for (const u of usageOf(join(path, f))) { add(acc, u); add(all, u); }
     }
-    const all = {}; for (const f of readdirSync(path).filter((f) => /^agent-.*\.jsonl$/.test(f))) usageOf(join(path, f)).forEach((u) => add(all, u));
-    report[label] = { ...dollars(all), agents: groups };
+    const agents = Object.fromEntries(Object.entries(byDesc).map(([desc, acc]) => [desc, { transcripts: transcripts[desc], ...dollars(acc) }]));
+    report[label] = { ...dollars(all), agents };
   } else {
-    const acc = {}; usageOf(path).forEach((u) => add(acc, u)); report[label] = dollars(acc);
+    usageOf(path).forEach((u) => add(all, u)); report[label] = dollars(all);
   }
+  warnUnpriced(label, all);
 }
 console.log(JSON.stringify(report, null, 1));
