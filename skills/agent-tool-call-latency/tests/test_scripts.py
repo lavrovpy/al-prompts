@@ -12,7 +12,7 @@ sys.path.insert(0, SCRIPTS)
 
 import aggregate  # noqa: E402
 import extract  # noqa: E402
-from common import Context, first_cmd, guess_kind, iso_ms, redact, since_ms  # noqa: E402
+from common import Context, first_cmd, guess_kind, iso_ms, mcp_names, redact, since_ms  # noqa: E402
 
 T0 = "2026-10-01T10:00:00.000Z"
 
@@ -98,6 +98,12 @@ class Helpers(unittest.TestCase):
                     "npm view https://registry.npmjs.org/@types/node", "git clone ssh://git@host:22/repo"):
             self.assertEqual(redact(cmd), cmd)
 
+    def test_mcp_names_split_only_unambiguous_spellings(self):
+        self.assertEqual(mcp_names("mcp__claude_ai_Notion__notion-search"), ("claude_ai_Notion", "notion-search"))
+        self.assertEqual(mcp_names("mcp:github.get_pr"), ("github", "get_pr"))
+        for name in ("mcp_claude_ai_Notion_search", "mcp-context7-resolve-library-id"):
+            self.assertEqual(mcp_names(name), (None, None))
+
     def test_redact_masks_other_common_secret_shapes(self):
         # Assembled at run time: a literal token here trips the forge's secret scanning on push.
         fake = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -125,6 +131,7 @@ class Helpers(unittest.TestCase):
         self.assertEqual(guess_kind("run_terminal_command"), "shell")
         self.assertEqual(guess_kind("str_replace_editor"), "edit")
         self.assertEqual(guess_kind("mcp__github__get_pr"), "mcp")
+        self.assertEqual(guess_kind("mcp-context7-resolve-library-id"), "mcp")
 
 
 class Adapters(unittest.TestCase):
@@ -308,58 +315,106 @@ def pb_time(ms):
     return pb(1, ms // 1000) + pb(2, ms % 1000 * 1_000_000)
 
 
-class GuiClientAdapters(unittest.TestCase):
+START_MS = 1790000000000
+
+
+def cursor_db(home, data_dir, bubbles):
+    """A Cursor state.vscdb under `data_dir`; bubbles=None leaves out the cursorDiskKV table."""
+    path = os.path.join(home, data_dir, "User/globalStorage/state.vscdb")
+    os.makedirs(os.path.dirname(path))
+    db = sqlite3.connect(path)
+    if bubbles is None:
+        db.execute("create table ItemTable (key text unique on conflict replace, value blob)")
+    else:
+        db.execute("create table cursorDiskKV (key text unique on conflict replace, value blob)")
+        for key, value in bubbles:
+            db.execute("insert into cursorDiskKV values (?, ?)", (key, json.dumps(value)))
+    db.commit()
+    db.close()
+
+
+def cursor_bubble(call_id, name, params, duration=1000):
+    return dict(startedAtMs=START_MS, completedAtMs=START_MS + duration, toolFormerData=dict(
+        name=name, toolCallId=call_id, status="completed", params=json.dumps(params)))
+
+
+def ag_step(call_id, name, args, end, statuses):
+    history = b"".join(pb(1, pb(1, st) + pb(2, pb_time(t))) for st, t in statuses)
+    return (pb(1, pb_time(START_MS)) + pb(4, pb(1, call_id) + pb(2, name) + pb(3, json.dumps(args)))
+            + pb(6, pb_time(START_MS)) + pb(8, pb_time(end)) + pb(26, history))
+
+
+def antigravity_db(home, steps):
+    """An Antigravity conversation file of (status, metadata) steps; steps=None leaves out the table."""
+    path = os.path.join(home, ".gemini/antigravity/conversations/conv-1.db")
+    os.makedirs(os.path.dirname(path))
+    db = sqlite3.connect(path)
+    if steps is None:
+        db.execute("create table trajectory (id integer primary key)")
+    else:
+        db.execute("create table steps (idx integer primary key, step_type integer, status integer, metadata blob)")
+        for i, (status, meta) in enumerate(steps, 1):
+            db.execute("insert into steps values (?, 132, ?, ?)", (i, status, meta))
+    db.commit()
+    db.close()
+
+
+class GuiHarnessAdapters(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp()
 
-    def extract(self, only, *extra):
+    def run_extract(self, *extra):
         out = os.path.join(self.home, "calls.jsonl")
-        subprocess.run([sys.executable, os.path.join(SCRIPTS, "extract.py"), "--home", self.home, "--since",
-                        "2026-09-01", "--only", only, "--out", out, *extra], check=True, capture_output=True)
-        return {c["id"]: c for c in read_jsonl(out)}
+        result = subprocess.run([sys.executable, os.path.join(SCRIPTS, "extract.py"), "--home", self.home, "--since",
+                                 "2026-09-01", "--out", out, *extra], capture_output=True, text=True,
+                                env=dict(os.environ, AGENT_LATENCY_HOOK_LOG=os.path.join(self.home, "no-hooks.jsonl")))
+        return result, {c["id"]: c for c in read_jsonl(out)} if os.path.exists(out) else {}
+
+    def extract(self, only, *extra):
+        result, calls = self.run_extract("--only", only, *extra)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return calls
 
     def test_cursor_reads_tool_bubbles_and_review_waits(self):
-        path = os.path.join(self.home, "Library/Application Support/Cursor/User/globalStorage/state.vscdb")
-        os.makedirs(os.path.dirname(path))
-        db = sqlite3.connect(path)
-        db.execute("create table cursorDiskKV (key text unique on conflict replace, value blob)")
-        shell = dict(startedAtMs=1790000000000, completedAtMs=1790000003500, toolFormerData=dict(
+        shell = dict(startedAtMs=START_MS, completedAtMs=START_MS + 3500, toolFormerData=dict(
             name="run_terminal_command_v2", toolCallId="toolu_1", status="completed",
             params=json.dumps(dict(command="pnpm test", requestedSandboxPolicy=dict(additionalReadwritePaths=["/w/app"]))),
             additionalData=dict(status="success")))
-        edit = dict(startedAtMs=1790000010000, completedAtMs=1790000130000, toolFormerData=dict(
+        edit = dict(startedAtMs=START_MS + 10_000, completedAtMs=START_MS + 130_000, toolFormerData=dict(
             name="edit_file_v2", toolCallId="toolu_2", status="completed", params="{}",
             additionalData=dict(blockReason="outOfWorkspace", reviewData=dict(selectedOption="accept"))))
-        for key, value in [("bubbleId:c1:b1", shell), ("bubbleId:c1:b1/t:toolu_1", shell), ("bubbleId:c1:b2", edit)]:
-            db.execute("insert into cursorDiskKV values (?, ?)", (key, json.dumps(value)))
-        db.commit()
-        db.close()
+        cursor_db(self.home, "Library/Application Support/Cursor",
+                  [("bubbleId:c1:b1", shell), ("bubbleId:c1:b1/t:toolu_1", shell), ("bubbleId:c1:b2", edit)])
         calls = self.extract("cursor")
         self.assertEqual(len(calls), 2)
         self.assertEqual((calls["toolu_1"]["kind"], calls["toolu_1"]["dur_ms"], calls["toolu_1"]["project"]),
                          ("shell", 3500, "app"))
         self.assertTrue(calls["toolu_2"]["human_wait"])
         self.assertEqual(calls["toolu_2"]["approval"], "outOfWorkspace")
-        self.assertNotIn("toolu_1", self.extract("cursor", "--exclude-cwd", "/w/app"))
+        self.assertEqual(set(self.extract("cursor", "--exclude-cwd", "/w/app")), {"toolu_2"})
+        self.assertEqual(set(self.extract("cursor", "--include-cwd", "/w/app")), {"toolu_1"})
+
+    def test_cursor_takes_mcp_server_and_tool_from_params_on_linux_and_windows(self):
+        cursor_db(self.home, ".config/Cursor", [
+            ("bubbleId:c1:b1", cursor_bubble("m1", "mcp-context7-resolve-library-id",
+                                             dict(tools=[dict(serverName="context7", name="resolve-library-id")]))),
+            ("bubbleId:c1:b2", cursor_bubble("m2", "mcp--", dict(tools=[dict(serverName="user-gitlab",
+                                                                               name="user-gitlab-create_issue")]))),
+            ("bubbleId:c1:b3", cursor_bubble("m3", "mcp_cursor-browser-extension_browser_click", {}))])
+        cursor_db(self.home, "AppData/Roaming/Cursor", [("bubbleId:c2:b1", cursor_bubble("w1", "read_file_v2", {}))])
+        calls = self.extract("cursor")
+        self.assertEqual(set(calls), {"m1", "m2", "m3", "w1"})
+        named = {i: (calls[i]["kind"], calls[i].get("mcp_server"), calls[i].get("mcp_tool")) for i in ("m1", "m2", "m3")}
+        self.assertEqual(named, {"m1": ("mcp", "context7", "resolve-library-id"),
+                                 "m2": ("mcp", "user-gitlab", "create_issue"),
+                                 "m3": ("mcp", None, None)})
 
     def test_antigravity_decodes_steps_and_flags_approval_waits(self):
-        path = os.path.join(self.home, ".gemini/antigravity/conversations/conv-1.db")
-        os.makedirs(os.path.dirname(path))
-        db = sqlite3.connect(path)
-        db.execute("create table steps (idx integer primary key, step_type integer, status integer, metadata blob)")
-        start = 1790000000000
-
-        def step(call_id, name, args, end, statuses):
-            history = b"".join(pb(1, pb(1, st) + pb(2, pb_time(t))) for st, t in statuses)
-            return (pb(1, pb_time(start)) + pb(4, pb(1, call_id) + pb(2, name) + pb(3, json.dumps(args)))
-                    + pb(6, pb_time(start)) + pb(8, pb_time(end)) + pb(26, history))
-
-        db.execute("insert into steps values (1, 132, 3, ?)", (step("call_1", "run_command", dict(CommandLine="find . -maxdepth 1", Cwd="/w/app"),
-                                                                    start + 300_000, [(1, start), (9, start + 100), (3, start + 300_000)]),))
-        db.execute("insert into steps values (2, 132, 3, ?)", (step("call_2", "view_file", {}, start + 20, [(1, start), (3, start + 20)]),))
-        db.execute("insert into steps values (3, 15, 3, ?)", (pb(1, pb_time(start)),))  # a model turn, no tool call
-        db.commit()
-        db.close()
+        antigravity_db(self.home, [
+            (3, ag_step("call_1", "run_command", dict(CommandLine="find . -maxdepth 1", Cwd="/w/app"),
+                        START_MS + 300_000, [(1, START_MS), (9, START_MS + 100), (3, START_MS + 300_000)])),
+            (3, ag_step("call_2", "view_file", {}, START_MS + 20, [(1, START_MS), (3, START_MS + 20)])),
+            (3, pb(1, pb_time(START_MS)))])  # a model turn, no tool call
         calls = self.extract("antigravity")
         self.assertEqual(set(calls), {"call_1", "call_2"})
         self.assertEqual((calls["call_1"]["kind"], calls["call_1"]["dur_ms"], calls["call_1"]["command"]),
@@ -367,6 +422,33 @@ class GuiClientAdapters(unittest.TestCase):
         self.assertTrue(calls["call_1"]["human_wait"])
         self.assertFalse(calls["call_2"].get("human_wait"))
         self.assertEqual(calls["call_2"]["kind"], "read")
+        self.assertEqual(set(self.extract("antigravity", "--exclude-cwd", "/w/app")), {"call_2"})
+        self.assertEqual(set(self.extract("antigravity", "--include-cwd", "/w/app")), {"call_1"})
+
+    def test_antigravity_skips_steps_whose_wire_types_changed_and_counts_them(self):
+        good = ag_step("call_1", "view_file", {}, START_MS + 20, [(3, START_MS + 20)])
+        name_as_varint = pb(4, pb(1, "call_2") + pb(2, 7)) + pb(6, pb_time(START_MS)) + pb(8, pb_time(START_MS + 5))
+        seconds_as_bytes = pb(4, pb(1, "call_3") + pb(2, "view_file")) + pb(6, pb(1, b"x")) + pb(8, pb_time(START_MS))
+        antigravity_db(self.home, [(3, good), (3, name_as_varint), (3, seconds_as_bytes), (3, b"\xff")])
+        result, calls = self.run_extract("--only", "antigravity")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(set(calls), {"call_1"})
+        self.assertIn("skipped 3 steps", result.stderr)
+
+    def test_antigravity_mcp_names_are_not_split_on_underscores(self):
+        antigravity_db(self.home, [(3, ag_step("call_1", "mcp_claude_ai_Notion_search", {}, START_MS + 20, []))])
+        call = self.extract("antigravity")["call_1"]
+        self.assertEqual((call["kind"], call.get("mcp_server"), call.get("mcp_tool")), ("mcp", None, None))
+
+    def test_a_database_without_its_table_is_skipped_and_the_run_goes_on(self):
+        write_jsonl(os.path.join(self.home, ".claude/projects/p/s.jsonl"), claude_rows())
+        cursor_db(self.home, "Library/Application Support/Cursor", None)
+        antigravity_db(self.home, None)
+        result, calls = self.run_extract()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(set(calls), {"tu1", "tu2", "tu3"})
+        self.assertIn("cursor: skipped", result.stderr)
+        self.assertIn("antigravity: skipped", result.stderr)
 
 
 class Aggregate(unittest.TestCase):

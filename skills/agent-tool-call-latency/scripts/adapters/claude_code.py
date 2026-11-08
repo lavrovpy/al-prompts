@@ -6,7 +6,7 @@ import glob
 import json
 import os
 
-from common import each_source, iso_ms, read_jsonl, record
+from common import each_source, iso_ms, mcp_names, read_jsonl, record
 
 NAME = "claude-code"
 AGENT = "Claude Code"
@@ -83,8 +83,8 @@ def _session(ctx, path):
         if name == "Bash":
             fields["command"] = inp.get("command") or ""
         elif name.startswith("mcp__"):
-            parts = name.split("__")
-            fields.update(kind="mcp", mcp_server=parts[1] if len(parts) > 1 else "?", mcp_tool="__".join(parts[2:]))
+            server, tool = mcp_names(name)
+            fields.update(kind="mcp", mcp_server=server, mcp_tool=tool)
         else:
             fields["detail"] = json.dumps(inp)[:160]
         yield record(**fields)

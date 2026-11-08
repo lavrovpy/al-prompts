@@ -229,8 +229,40 @@ def read_jsonl(path):
                 continue
 
 
+def json_object(text):
+    """The JSON object in `text` (str or bytes), or {} when it is empty, malformed or not an object."""
+    if isinstance(text, bytes):
+        text = text.decode(errors="replace")
+    try:
+        value = json.loads(text or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def project_name(cwd):
+    """The `project` field: the working directory's basename, or None without one."""
+    return os.path.basename((cwd or "").rstrip("/")) or None
+
+
+def mcp_names(tool):
+    """(server, tool) from an MCP tool name, or (None, None) when the name cannot be split.
+
+    Only `mcp__server__tool` and `mcp:server.tool` split reliably. In spellings such as
+    `mcp_server_tool` or `mcp-server-tool`, server and tool names contain the separator themselves
+    (`claude_ai_Notion`, `resolve-library-id`), so any split would credit calls to the wrong server.
+    """
+    if tool.startswith("mcp__"):
+        parts = tool.split("__")
+        return parts[1] or None, "__".join(parts[2:]) or None
+    if tool.startswith("mcp:") and "." in tool:
+        server, _, name = tool[len("mcp:"):].partition(".")
+        return server or None, name or None
+    return None, None
+
+
 _KIND_HINTS = [
-    ("mcp", re.compile(r"^mcp[_:.]|__")),
+    ("mcp", re.compile(r"^mcp[-_:.]|__")),
     ("shell", re.compile(r"bash|shell|exec|terminal|run_command|command")),
     ("edit", re.compile(r"edit|write|patch|replace|create_file|insert")),
     ("read", re.compile(r"read|view|cat_file|open_file|image")),

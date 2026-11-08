@@ -5,7 +5,8 @@ An adapter turns one harness's history into [call records](SCHEMA.md). The built
 ## Interface
 
 ```python
-from common import each_source, guess_kind, iso_ms, query_ro, read_jsonl, record   # extract.py puts scripts/ on sys.path
+from common import each_source, guess_kind, iso_ms, json_object, mcp_names, project_name, query_ro, read_jsonl, record
+# extract.py puts scripts/ on sys.path
 
 NAME = "my-harness"            # what --only and --list show
 
@@ -21,7 +22,7 @@ def claims(ctx):               # optional, for a frontend that drives other agen
                                # add agents=("Claude Code",) to limit a cwd claim to the agents it drives
 ```
 
-`record()` masks secrets, clips text, and raises on a missing field or unknown kind. Map the harness's tool names to kinds explicitly; `guess_kind()` is the fallback for names you have not seen. `iso_ms()` returns `None` for a missing or malformed timestamp: skip that call. `each_source()` skips a file that fails to parse and says so, and `query_ro()` opens SQLite read-only and falls back to a temporary copy when the owning app holds a lock. If an adapter raises anyway, `extract.py` reports it, writes the other adapters' calls, and exits 2.
+`record()` masks secrets, clips text, and raises on a missing field or unknown kind. Map the harness's tool names to kinds explicitly; `guess_kind()` is the fallback for names you have not seen. `json_object()` parses a JSON arguments field into a dict, and `project_name()` turns a working directory into `project`. Take `mcp_server` and `mcp_tool` from the harness's own fields when it stores them apart; otherwise `mcp_names()` splits the tool name, and leaves both unset for a spelling it cannot split. `iso_ms()` returns `None` for a missing or malformed timestamp: skip that call. `each_source()` skips a file that fails to parse and says so, and `query_ro()` opens SQLite read-only and falls back to a temporary copy when the owning app holds a lock. If an adapter raises anyway, `extract.py` reports it, writes the other adapters' calls, and exits 2.
 
 An adapter is code that runs with the user's permissions. Show a newly written one to the user before its first `--adapter` run.
 
