@@ -22,9 +22,28 @@ OPTIONAL = {"command": str, "mcp_server": str, "mcp_tool": str, "detail": str, "
 COMMAND_MAX = 2000
 DETAIL_MAX = 160
 
+_URL_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://[^\s:/?#@\[\]'\"]*:)([^\s'\"?#]*@[^\s'\"?#]*)")
+
+
+def _mask_url_password(m):
+    rest = m.group(2)
+    if re.match(r"\d+/", rest):
+        return m.group(0)
+    # The password runs to the last @ before the host, so it may hold @ itself. An @ after a / is
+    # part of the path (`https://u:p@host/users/@me`), and a port before a / means the URL has no
+    # password at all (`http://localhost:3000/@me`).
+    end = rest.index("@")
+    while (nxt := rest.find("@", end + 1)) != -1 and "/" not in rest[end + 1:nxt]:
+        end = nxt
+    return m.group(1) + "[REDACTED]" + rest[end:]
+
+
 # Token shapes worth masking before a command is written to disk. Commands are kept so the
 # auditor can tell `pnpm e2e` from `pnpm test`; credentials in them are never needed.
+# The URL rule runs first: once a token rule has rewritten a user name to [REDACTED], its
+# brackets would hide the password behind it.
 _SECRET_PATTERNS = [
+    (_URL_USERINFO, _mask_url_password),
     (re.compile(r"\b(sk|pk|rk)[-_][A-Za-z0-9_-]{16,}"), "[REDACTED]"),
     (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"), "[REDACTED]"),
     (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"), "[REDACTED]"),
@@ -34,7 +53,6 @@ _SECRET_PATTERNS = [
     (re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"), "[REDACTED]"),
     (re.compile(r"\b(npm|hf)_[A-Za-z0-9]{30,}"), "[REDACTED]"),
     (re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"), "[REDACTED]"),
-    (re.compile(r"(\b[a-z][a-z0-9+.-]*://[^\s:/@]+:)[^\s@/]+@"), r"\1[REDACTED]@"),
     (re.compile(r"(?i)(authorization:\s*(?:(?:bearer|basic|token)\s+)?)[^\s'\"]+"), r"\1[REDACTED]"),
     (re.compile(r"(?i)\b((?:x-)?[a-z-]*(?:api-key|token|secret)\s*:\s*)[^\s'\"]+"), r"\1[REDACTED]"),
     (re.compile(r"(?i)(\s--?(?:password|passwd|pass|token|secret|api-key|apikey)(?:=|\s+))(?:\"[^\"]*\"|'[^']*'|\S+)"),

@@ -85,6 +85,19 @@ class Helpers(unittest.TestCase):
         self.assertIn("postgresql://app:[REDACTED]@localhost", out)
         self.assertIn("https://github.com/a/b", out)
 
+    def test_redact_masks_the_whole_password_in_a_url(self):
+        for cmd, expected in [("mysql://root:p@ssw0rd@host", "mysql://root:[REDACTED]@host"),
+                              ("HTTPS://u:pw@host", "HTTPS://u:[REDACTED]@host"),
+                              ("redis://:pw@host", "redis://:[REDACTED]@host"),
+                              ("mysql://root:pa/ss@db", "mysql://root:[REDACTED]@db"),
+                              ("curl https://u:pw@host/users/@me", "curl https://u:[REDACTED]@host/users/@me")]:
+            self.assertEqual(redact(cmd), expected)
+
+    def test_redact_leaves_urls_without_a_password(self):
+        for cmd in ("curl http://localhost:3000?email=a@b.com", "curl http://localhost:3000/users/@me",
+                    "npm view https://registry.npmjs.org/@types/node", "git clone ssh://git@host:22/repo"):
+            self.assertEqual(redact(cmd), cmd)
+
     def test_redact_masks_other_common_secret_shapes(self):
         # Assembled at run time: a literal token here trips the forge's secret scanning on push.
         fake = "abcdefghijklmnopqrstuvwxyz0123456789"
