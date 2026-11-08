@@ -49,7 +49,7 @@ Sign a browser session in with:
 
 Evidence directory: given in your charter — name files `<finding-id>-<short-slug>-<n>.png|webm|txt`.
 
-- **Interactive bugs → video + screenshots.** `record start <path>.webm` opens a *fresh, signed-out browser context*, so the order is: `record start` → (`set device …` if mobile) → `qa-signin <session> <user> <start-path>` → the steps at human pace (`sleep 1` between actions) → screenshot the broken state → `record stop`. Keep videos under ~60 s.
+- **Interactive bugs → video + screenshots.** `record start <path>.webm` opens a *fresh, signed-out browser context*, so the order is: `record start` → (`set device …` if mobile) → `<abs path>/qa-signin <session> <user> <start-path>` → the steps at human pace (`sleep 1` between actions) → screenshot the broken state → `record stop`. Keep videos under ~60 s.
 - **Static/visual bugs → screenshot(s)**; for layout bugs put the viewport in the caption.
 - **API/backend bugs → a `.txt` log** with the exact `curl` commands and full responses, secrets redacted.
 - **Performance → numbers** (how measured, values, repeat count).
