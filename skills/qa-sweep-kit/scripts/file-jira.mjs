@@ -4,10 +4,12 @@
 // Env: JIRA_SITE (https://x.atlassian.net), JIRA_EMAIL, JIRA_TOKEN_FILE (personal API token, basic auth),
 //      JIRA_PROJECT (key), QA_LABEL (corpus label), QA_BUILD (e.g. "web origin/main abc1234"),
 //      QA_PERSONAS (optional JSON file: {"user_name": "plain-words description"}), QA_CONVERTED_DIR (mp4 cache).
-// The ledger maps finding id -> issue key, so re-running never files the same finding twice.
-import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "node:fs";
+// The ledger records each finding's issue key, uploaded attachments and links, so a rerun picks up where the last one
+// stopped without filing or uploading anything twice. Exits 1 when a ticket had no evidence file or a link failed.
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, renameSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 const [ticketsPath, ledgerPath, ...rest] = process.argv.slice(2);
 const flag = (name) => { const i = rest.indexOf(name); return i === -1 ? undefined : rest[i + 1]; };
@@ -78,7 +80,7 @@ function describe(t, mediaByPath) {
     c.push(list(ev.map((e) => `\`${uploadName(e.path)}\` — ${e.caption}`)));
     for (const e of ev) {
       const m = mediaByPath.get(e.path);
-      if (m && /\.(png|jpe?g)$/i.test(e.path)) {
+      if (m && isImage(e.path)) {
         c.push({ type: "mediaSingle", attrs: { layout: "center" }, content: [{ type: "media", attrs: { type: "file", id: m.fileId, collection: m.collection } }] });
       }
     }
@@ -107,11 +109,15 @@ function personaLine(p) {
 
 // ---------- files ----------
 const uploadName = (p) => (extname(p).toLowerCase() === ".webm" ? basename(p).replace(/\.webm$/i, ".mp4") : basename(p));
+const isImage = (p) => /\.(png|jpe?g)$/i.test(p);
 function prepare(p) {
   if (extname(p).toLowerCase() !== ".webm") return p;
-  const out = join(CONVERTED, uploadName(p));
+  // Keyed by content, not name: every sweep reuses names like browse-01-…webm.
+  const out = join(CONVERTED, createHash("sha256").update(readFileSync(p)).digest("hex").slice(0, 32) + ".mp4");
   if (!existsSync(out)) {
-    execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", p, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-movflags", "+faststart", out]);
+    const partial = `${out}.part.mp4`;
+    execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", p, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-movflags", "+faststart", partial]);
+    renameSync(partial, out);
   }
   return out;
 }
@@ -130,10 +136,10 @@ async function ok(res, what) {
   if (res.ok) return res.status === 204 ? null : res.json();
   throw new Error(`${what}: HTTP ${res.status} ${await res.text()}`);
 }
-async function attach(key, path) {
+async function attach(key, path, name) {
   const fd = new FormData();
-  fd.append("file", new Blob([readFileSync(path)]), basename(path));
-  const [a] = await ok(await jira("POST", `/rest/api/3/issue/${key}/attachments`, fd, { "X-Atlassian-Token": "no-check" }), `attach ${basename(path)}`);
+  fd.append("file", new Blob([readFileSync(path)]), name);
+  const [a] = await ok(await jira("POST", `/rest/api/3/issue/${key}/attachments`, fd, { "X-Atlassian-Token": "no-check" }), `attach ${name}`);
   return a;
 }
 // The attachment content URL redirects to the Media API; its file id lets the description embed the image inline.
@@ -148,16 +154,19 @@ async function mediaFileId(attachmentId) {
 const tickets = JSON.parse(readFileSync(ticketsPath, "utf8"));
 const ledger = existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, "utf8")) : {};
 const save = () => writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2));
+const usable = (e) => existsSync(e.path) && statSync(e.path).size > 0;
 let filed = 0;
+const skipped = [], incomplete = [];
 for (const t of tickets) {
   if (ONLY && !ONLY.includes(t.id)) continue;
-  if (ledger[t.id]?.key && ledger[t.id]?.done) continue;
-  if (filed >= LIMIT) break;
+  if (ledger[t.id]?.done) continue;
+  if (filed + incomplete.length >= LIMIT) break;
   const evidence = [...(t.evidence || []), ...(t.also_observed || []).flatMap((a) => a.evidence || [])];
-  const missing = evidence.filter((e) => !existsSync(e.path));
-  const present = evidence.filter((e) => existsSync(e.path) && statSync(e.path).size > 0);
-  if (!present.length) { console.error(`SKIP ${t.id}: no evidence file exists (${missing.map((m) => m.path).join(", ")})`); continue; }
-  t.evidence = (t.evidence || []).filter((e) => existsSync(e.path));
+  const present = evidence.filter(usable);
+  const unusable = evidence.filter((e) => !usable(e)).map((e) => e.path);
+  if (!present.length) { skipped.push(t.id); console.error(`SKIP ${t.id}: no evidence file exists (${unusable.join(", ")})`); continue; }
+  if (unusable.length) console.error(`  ${t.id}: leaving out missing or empty evidence: ${unusable.join(", ")}`);
+  t.evidence = (t.evidence || []).filter(usable);
   const labels = [
     LABEL,
     ...(t.repos || []).map((r) => `repo-${r}`),
@@ -168,21 +177,24 @@ for (const t of tickets) {
   ].filter(Boolean);
   if (DRY) { console.log(JSON.stringify({ id: t.id, title: t.title, type: t.issue_type, labels, files: present.map((e) => uploadName(e.path)) })); filed++; continue; }
 
-  let key = ledger[t.id]?.key;
-  if (!key) {
+  const entry = (ledger[t.id] ??= { title: t.title });
+  if (!entry.key) {
     const fields = { project: { key: PROJECT }, issuetype: { name: t.issue_type }, summary: t.title.slice(0, 254), labels };
     let res = await jira("POST", "/rest/api/3/issue", { fields: { ...fields, priority: { name: PRIORITY[t.severity] } } });
     if (res.status === 400) res = await jira("POST", "/rest/api/3/issue", { fields }); // priority not on this project's screen
-    key = (await ok(res, `create ${t.id}`)).key;
-    ledger[t.id] = { key, title: t.title }; save();
+    entry.key = (await ok(res, `create ${t.id}`)).key; save();
   }
+  const key = entry.key;
+  entry.attached ??= {};
   const mediaByPath = new Map();
   for (const e of present) {
-    const a = await attach(key, prepare(e.path));
-    if (/\.(png|jpe?g)$/i.test(e.path)) {
-      const fileId = await mediaFileId(a.id).catch(() => null);
-      if (fileId) mediaByPath.set(e.path, { fileId, collection: "" });
+    if (!entry.attached[e.path]) {
+      const a = await attach(key, prepare(e.path), uploadName(e.path));
+      const fileId = isImage(e.path) ? await mediaFileId(a.id).catch(() => null) : null;
+      entry.attached[e.path] = { id: a.id, fileId }; save();
     }
+    const { fileId } = entry.attached[e.path];
+    if (fileId) mediaByPath.set(e.path, { fileId, collection: "" });
   }
   let res = await jira("PUT", `/rest/api/3/issue/${key}`, { fields: { description: describe(t, mediaByPath) } });
   if (!res.ok) {
@@ -191,13 +203,24 @@ for (const t of tickets) {
     res = await jira("PUT", `/rest/api/3/issue/${key}`, { fields: { description: describe(t, new Map()) } });
   }
   await ok(res, `describe ${key}`);
+  entry.linked ??= [];
+  const failedLinks = [];
   for (const ext of new Set(t.related_existing || [])) {
-    if (!new RegExp(`^${PROJECT}-\\d+$`).test(ext)) continue;
+    if (!new RegExp(`^${PROJECT}-\\d+$`).test(ext) || entry.linked.includes(ext)) continue;
     const r = await jira("POST", "/rest/api/3/issueLink", { type: { name: "Relates" }, inwardIssue: { key }, outwardIssue: { key: ext } });
-    if (!r.ok) console.error(`  link ${key} -> ${ext} failed: ${r.status}`);
+    if (r.ok) { entry.linked.push(ext); save(); }
+    else failedLinks.push(`${ext} (HTTP ${r.status} ${(await r.text()).slice(0, 160)})`);
   }
-  ledger[t.id] = { key, title: t.title, done: true }; save();
+  if (failedLinks.length) {
+    incomplete.push(t.id);
+    console.error(`  ${key}: link failed: ${failedLinks.join("; ")}`);
+    continue;
+  }
+  entry.done = true; save();
   filed++;
   console.log(`${key}\t${t.id}\t${t.issue_type}\t${t.severity}\t${t.title}`);
 }
 console.log(`filed ${filed}`);
+if (skipped.length) console.error(`NOT FILED, no evidence file exists: ${skipped.join(", ")}`);
+if (incomplete.length) console.error(`FILED WITHOUT ALL LINKS, rerun to retry: ${incomplete.join(", ")}`);
+if (skipped.length || incomplete.length) process.exitCode = 1;
