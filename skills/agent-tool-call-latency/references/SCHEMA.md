@@ -7,7 +7,7 @@
 | Field | Required | Meaning |
 |---|---|---|
 | `agent` | yes | The tool loop that ran the call: `Claude Code`, `Codex`, `OpenCode`. |
-| `harness` | yes | The surface the user worked in: `Claude Code CLI`, `Codex Desktop`, or `<frontend> → <agent>` when a frontend drives another agent (`T3 Code → Codex`). |
+| `harness` | yes | The app or CLI the user worked in: `Claude Code CLI`, `Codex Desktop`, or `<frontend> → <agent>` when a frontend drives another agent (`T3 Code → Codex`). |
 | `session` | yes | The harness's session or thread id. |
 | `id` | yes | The call id, unique within the agent across all sessions. `extract.py` keeps one record per (`agent`, `id`), so copies from resumed or forked sessions, or from two sources describing one call, count once. Build a fallback id from the session and something unique inside it, never from a per-session counter alone. |
 | `ts` | yes | Start, epoch milliseconds. |

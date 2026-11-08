@@ -3,8 +3,8 @@
 
 Wire it as the harness's pre-tool and post-tool hook (references/ADAPTERS.md § Capturing with hooks):
 
-    hook_capture.py pre  --agent <agent> [--harness <surface>]
-    hook_capture.py post --agent <agent> [--harness <surface>]
+    hook_capture.py pre  --agent <agent> [--harness <harness>]
+    hook_capture.py post --agent <agent> [--harness <harness>]
 
 The hook payload is read from stdin as JSON; field names vary by harness, so several spellings are
 tried. The script never blocks the tool: it prints nothing, swallows every error, and exits 0.

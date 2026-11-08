@@ -1,11 +1,6 @@
 ---
 name: agent-tool-call-latency
-description: >
-  Measures every agent tool call on this machine from local session history (the
-  user's chat logs), in any harness, finds where the time goes, and ranks fixes
-  for slow commands, harness overhead and wasted waiting. Use when the user asks
-  why their agents are slow, where agent run time goes, or how to cut the time
-  agents spend waiting on tools.
+description: Measure every agent tool call on this machine from local session history, in any harness, find where the time goes, and rank fixes for slow commands, harness overhead and wasted waiting.
 disable-model-invocation: true
 argument-hint: "[window, e.g. '14 days'; or a harness or project to focus on]"
 ---
@@ -32,20 +27,20 @@ Work in `~/.cache/agent-tool-call-latency/<today>/` (the **work directory**; cre
 2. Find the harnesses they miss. Check the installed agent CLIs and apps (`ls /Applications`, `command -v` for agent CLIs, dot-directories in `~` that hold sessions), and keep those whose history changed inside the window.
 3. Write an adapter for each one, following [ADAPTERS.md](references/ADAPTERS.md), into `<work directory>/adapters/`.
 
-Done when every harness with history in the window has one of:
+Done when every harness with history in the window has one of the following, and each one without an adapter has its line in `<work directory>/notes.md`:
 
 - an adapter that meets [ADAPTERS.md § Done when](references/ADAPTERS.md#done-when);
-- a recorded reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4;
-- a recorded call count under 1% of the other harnesses' calls, which the report lists under *Not measured*.
+- the reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4;
+- its call count in the window, under 1% of the total that a first run of the phase 2 extraction prints (`<n> calls since <first day>`), with both numbers. Count it in the files that [ADAPTERS.md § Finding the history](references/ADAPTERS.md#finding-the-history) locates: the entries that record a tool call and are dated inside the window (`grep -c` on the field that marks one, or `select count(*)` in a database).
 
 ## Phase 2: Measure
 
-1. Extract: `python3 <skill>/scripts/extract.py --since <first day> --out <work directory>/calls.jsonl --exclude-cwd /agent-latency-bench/ [--adapter <file> ...]`. Exit status 2 means an adapter failed: the others' calls are written, and the failed one is fixed or replaced before going on. A line saying a source was skipped costs only that file's calls; list skipped files in the report's limits.
+1. Extract: `python3 <skill>/scripts/extract.py --since <first day> --out <work directory>/calls.jsonl --exclude-cwd /agent-latency-bench/ [--adapter <file> ...]`. Exit status 2 means an adapter failed: the others' calls are written, and the failed one is fixed or replaced before going on. A line saying a source was skipped costs only that file's calls; list skipped files in `notes.md`.
 2. Validate: `python3 <skill>/scripts/validate_calls.py <work directory>/calls.jsonl`. A schema error or an unexplained WARN sends you back to the adapter.
 3. Aggregate: `python3 <skill>/scripts/aggregate.py <work directory>/calls.jsonl --out-dir <work directory>` and read `summary.md`.
 4. Name the unnamed buckets. For each family in *Unnamed shell commands* above 1 h, read its commands, add a `[category, label, regex]` row to `<work directory>/patterns.json`, and re-run step 3 with `--patterns`.
 
-Done when every family above 1 h is named by a pattern, or explained in one line of the report (for example, one-off inline scripts with a sub-second median).
+Done when every family above 1 h is named by a pattern in `patterns.json`, or explained in one line in `notes.md` (for example, one-off inline scripts with a sub-second median).
 
 ## Phase 3: Diagnose
 
@@ -84,14 +79,14 @@ Done when every approved fix is applied or back with the user, and `changes.md` 
 Write `<work directory>/report.md`, titled `# Agent tool-call latency — <machine, described generically>`, with these numbered sections in order. If the user's instructions set a visual style, follow it for any rendered version.
 
 1. **Verdict:** one paragraph: tool time and calls in the window, the waste range, the largest waste by fix ID, the largest one still open, and the time agents spent waiting on the user.
-2. **Run and Scope:** one fenced yaml block: `audited_by`, `plugin_version` (the `version` of the plugin manifest that ships this skill, or `unknown`), `started`, `completed`, `window`, `platform`, `clients` (records and adapter per client), `not_extracted`, `excluded`, `calls`, `tool_hours`, `waste_hours`, `user_wait_hours`, `fixes` (count per status), `work_directory`.
+2. **Run and Scope:** one fenced yaml block: `audited_by`, `plugin_version` (the `version` of the plugin manifest that ships this skill, or `unknown`), `started`, `completed`, `window`, `platform`, `harnesses` (records and adapter per harness), `not_extracted`, `excluded`, `calls`, `tool_hours`, `waste_hours`, `user_wait_hours`, `fixes` (count per status), `work_directory`.
 3. **Glossary:** tool time, need, waste, waiting on you, at cap, approval path, p50 / p90, `F-nn`.
-4. **Where the time goes:** the overall p50, p90 and calls over 30 s; the client table; the category table, with a need or waste verdict per row that names its fix IDs. *Waiting on you* is neither: it is time agents waited for the user to answer a question or approve a call. Keep it out of the waste range and describe it as a trait of how the machine is used (agents left running unattended, prompts nobody is there to answer). A fix that removes prompts the user never needed to see still belongs in *What to Fix*, with its hours marked as user wait.
+4. **Where the time goes:** the overall p50, p90 and calls over 30 s; the harness table; the category table, with a need or waste verdict per row that names its fix IDs. *Waiting on you* is neither: it is time agents waited for the user to answer a question or approve a call. Keep it out of the waste range and describe it as a trait of how the machine is used (agents left running unattended, prompts nobody is there to answer). A fix that removes prompts the user never needed to see still belongs in *What to Fix*, with its hours marked as user wait.
 5. **What to Fix:** an index table (`ID | Waste in the window | Owner | Status | The next audit shows it worked when`), then one `### F-nn` record per fix, ranked by recoverable hours, with each field as a bullet: **Problem**, **Evidence**, **Cause** (and how it was confirmed), **Fix**, **Owner**, **Status** (applied, approved, proposed, needs investigation, declined; for an applied fix, its early effect), **Verify**.
-6. **Same operation, different client:** cheap operations' p50 / p90 per client, with one line per gap that names its cause or its fix ID.
-7. **Patterns by total time:** the top patterns with hours, calls, p50, p90, calls at cap and where they ran; then one line on MCP servers.
+6. **Same operation, different harness:** cheap operations' p50 / p90 per harness, with one line per gap that names its cause or its fix ID.
+7. **Patterns by total time:** the top patterns with hours, calls, p50, p90, calls at cap and where they ran; then one line on MCP servers, and the families `notes.md` explains.
 8. **Ruled out:** each cause checked and rejected, with its evidence.
-9. **Confidence and limits:** what timing each client's numbers rest on, how much data the early effects rest on, and what was not measured.
+9. **Confidence and limits:** what timing each harness's numbers rest on, how much data the early effects rest on, and what was not measured: the harnesses and skipped files in `notes.md`.
 10. **Commands Executed:** the extraction, validation and aggregation commands, any queries used to build an adapter, and their results; then the changes from `changes.md`.
 11. **Corrections to CAUSES.md:** entries this run confirmed, corrected or added, as replacement text.
 
