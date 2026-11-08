@@ -19,7 +19,7 @@ const MODELS = A.models || {}          // { explore, verify, triage }: 'opus' | 
 const EFFORTS = A.efforts || {}        // { explore, verify, triage }: 'low' | 'medium' | 'high' | ...
 const DO_VERIFY = A.verify !== false
 const DO_TRIAGE = A.triage !== false
-const ID = A.idPrefix || ''
+const ID_PREFIX = A.idPrefix || ''
 const SESS = A.sessionPrefix || 'qa'
 if (!BRIEF || !EXISTING || !EVIDENCE || !AREAS.length) throw new Error('qa-sweep needs args.brief, args.existingIssues, args.evidenceRoot and a non-empty args.areas')
 const opts = (stage, extra) => ({ ...extra, ...(MODELS[stage] ? { model: MODELS[stage] } : {}), ...(EFFORTS[stage] ? { effort: EFFORTS[stage] } : {}) })
@@ -99,7 +99,7 @@ ${a.charter}
 - Browser session name: \`${SESS}-${a.key}\` (API-only areas: no browser).
 - Users: ${a.users || 'see the brief'}.
 - Upload budget: ${a.exploreUploads ?? 0} files.
-- Evidence directory: ${EVIDENCE}/${a.key}/ (create it). Finding ids: ${ID}${a.key}-01, ${ID}${a.key}-02, …
+- Evidence directory: ${EVIDENCE}/${a.key}/ (create it). Finding ids: ${ID_PREFIX}${a.key}-01, ${ID_PREFIX}${a.key}-02, …
 - You may read the source code to discover features, edge cases and root causes, but every finding must be demonstrated against the running system.
 - ${HYGIENE}
 
@@ -138,12 +138,12 @@ const perArea = await pipeline(
     if (!explored) return { area: a.key, explored: null, verified: [] }
     const findings = (explored.findings || []).map(f => ({ ...f, area: a.key }))
     log(`${a.key}: ${findings.length} findings, ${(explored.already_tracked || []).length} already tracked`)
-    if (!findings.length || !DO_VERIFY) return { area: a.key, explored, verified: findings.map(f => ({ ...f, verdict: DO_VERIFY ? 'none' : 'unverified' })) }
+    if (!findings.length || !DO_VERIFY) return { area: a.key, explored, verified: findings.map(f => ({ ...f, verdict: 'unverified' })) }
     const v = await agent(verifyPrompt(a, findings), opts('verify', { label: `verify:${a.key}`, phase: 'Verify', schema: VERIFY_SCHEMA }))
     const byId = Object.fromEntries(((v && v.results) || []).map(r => [r.id, r]))
     const verified = findings.map(f => {
       const r = byId[f.id]
-      if (!r) return { ...f, verdict: 'unverified', verify_reason: 'verifier returned no verdict' }
+      if (!r) return { ...f, verdict: 'unverified', verify_reason: v ? 'verifier returned no verdict' : 'verifier agent failed' }
       const base = r.final_finding ? { ...f, ...r.final_finding } : f
       return { ...base, id: f.id, area: a.key, verdict: r.verdict, verify_reason: r.reason, duplicate_of: r.duplicate_of || '' }
     })
@@ -157,9 +157,11 @@ const all = areas.flatMap(r => r.verified)
 const keep = f => DO_VERIFY ? f.verdict === 'confirmed' : true
 const confirmed = all.filter(keep)
 const rejected = all.filter(f => !keep(f))
-const alreadyTracked = areas.flatMap(r => ((r.explored && r.explored.already_tracked) || []).map(t => ({ ...t, area: r.area })))
+const alreadyTracked = areas.flatMap(r => ((r.explored && r.explored.already_tracked) || []).map(item => ({ ...item, area: r.area })))
+const byId = Object.fromEntries(confirmed.map(f => [f.id, f]))
 
-let t = { drop: [], merge: [], severity_overrides: [], title_edits: [], links: [], notes: 'triage skipped' }
+let decisions = { drop: [], merge: [], severity_overrides: [], title_edits: [], links: [], notes: '' }
+let triageStatus = DO_TRIAGE ? 'no confirmed findings' : 'off'
 if (DO_TRIAGE && confirmed.length) {
   phase('Triage')
   const compact = confirmed.map(f => ({ id: f.id, area: f.area, title: f.title, type: f.issue_type, category: f.category, severity: f.severity, platform: f.platform, repos: f.repos, actual: (f.actual || '').slice(0, 400), developer_notes: (f.developer_notes || '').slice(0, 300), related_existing: f.related_existing || [] }))
@@ -168,39 +170,55 @@ if (DO_TRIAGE && confirmed.length) {
 Return decisions only (code applies them):
 1. Duplicates across areas: findings describing the same underlying problem or the same root cause (compare developer_notes: same file/function → likely same cause; desktop and mobile symptoms of one cause → merge). Keep the clearest, absorb the rest. Distinct root causes stay separate.
 2. Existing tracker: read ${EXISTING}. Drop findings an OPEN existing issue already fully covers (the reason must name the key). Related but distinct → add a link.
-3. Severity calibration across the set: critical = data loss, privacy/security leak, or app unusable; major = core feature broken with no workaround; minor = partly broken/workaround/cosmetic with impact; trivial = polish. Override only where clearly miscalibrated.
-4. Titles: fix vague, implementation-speak or >90-character titles; they must describe the user-visible symptom.
+3. Severity calibration across the set, against the severity scale in ${BRIEF}. Override only where clearly miscalibrated.
+4. Titles: fix any title that breaks the title rule in ${BRIEF}, or is vague or implementation-speak.
 5. Drop non-actionable or pure-taste findings (give the reason). Don't drop things merely for being small.
 
 Findings:
 ${JSON.stringify(compact, null, 1)}`, opts('triage', { label: 'triage', phase: 'Triage', schema: TRIAGE_SCHEMA }))
-  if (res) t = res
+  if (res) { decisions = res; triageStatus = 'done' }
+  else { triageStatus = 'failed'; log('triage FAILED: tickets are not deduplicated across areas and severities are not calibrated') }
 }
 
-const dropped = new Map(t.drop.map(d => [d.id, d.reason]))
-const absorbedInto = new Map()
-for (const m of t.merge) for (const id of m.absorb) if (id !== m.keep) absorbedInto.set(id, m.keep)
-const byId = Object.fromEntries(confirmed.map(f => [f.id, f]))
+const dropped = new Map(decisions.drop.map(d => [d.id, d.reason]))
+// Merges chain (A absorbs B, B absorbs C: A files with B and C). A merge that would form a cycle, absorb a finding
+// twice or name an unknown id is skipped and reported, because throwing here would discard every agent's result.
+const keptBy = new Map()
+const topOf = id => { while (keptBy.has(id)) id = keptBy.get(id); return id }
+const rejectedMerges = []
+for (const m of decisions.merge) for (const id of m.absorb) {
+  if (id === m.keep) continue
+  const why = !byId[m.keep] || !byId[id] ? 'names an id that is not a confirmed finding'
+    : keptBy.has(id) ? `${id} is already absorbed into ${keptBy.get(id)}`
+    : topOf(m.keep) === id ? `cycle: ${m.keep} is already absorbed into ${id}`
+    : ''
+  if (why) rejectedMerges.push({ keep: m.keep, absorb: id, why })
+  else keptBy.set(id, m.keep)
+}
+if (rejectedMerges.length) log(`triage: ${rejectedMerges.length} merges rejected, see rejected_merges`)
+const absorbedInto = new Map([...keptBy.keys()].map(id => [id, topOf(id)]))
 const tickets = confirmed.filter(f => !dropped.has(f.id) && !absorbedInto.has(f.id)).map(f => {
-  const sev = t.severity_overrides.find(s => s.id === f.id)
-  const te = t.title_edits.find(s => s.id === f.id)
-  const absorbed = [...absorbedInto.entries()].filter(([, k]) => k === f.id).map(([id]) => byId[id]).filter(Boolean)
+  const sev = decisions.severity_overrides.find(s => s.id === f.id)
+  const te = decisions.title_edits.find(s => s.id === f.id)
+  const absorbed = [...absorbedInto.entries()].filter(([, k]) => k === f.id).map(([id]) => byId[id])
   return {
     ...f,
     severity: sev ? sev.severity : f.severity,
     title: te ? te.title : f.title,
-    related_existing: [...new Set([...(f.related_existing || []), ...t.links.filter(l => l.id === f.id).map(l => l.existing_key)])],
+    related_existing: [...new Set([...(f.related_existing || []), ...decisions.links.filter(l => l.id === f.id).map(l => l.existing_key)])],
     also_observed: absorbed.map(x => ({ id: x.id, area: x.area, title: x.title, actual: x.actual, steps: x.steps, evidence: x.evidence })),
   }
 })
 
 return {
-  config: { models: MODELS, efforts: EFFORTS, verify: DO_VERIFY, triage: DO_TRIAGE, idPrefix: ID, areas: AREAS.map(a => a.key) },
+  config: { models: MODELS, efforts: EFFORTS, verify: DO_VERIFY, triage: DO_TRIAGE, idPrefix: ID_PREFIX, areas: AREAS.map(a => a.key) },
   stats: { reported: all.length, confirmed: confirmed.length, rejected: rejected.length, dropped_in_triage: dropped.size, absorbed: absorbedInto.size, tickets: tickets.length },
   tickets,
   rejected: rejected.map(f => ({ id: f.id, area: f.area, title: f.title, verdict: f.verdict, reason: f.verify_reason, duplicate_of: f.duplicate_of })),
   triage_dropped: [...dropped.entries()].map(([id, reason]) => ({ id, title: byId[id] && byId[id].title, reason })),
-  triage_notes: t.notes,
+  triage_status: triageStatus,
+  triage_notes: decisions.notes,
+  rejected_merges: rejectedMerges,
   already_tracked: alreadyTracked,
   coverage: areas.map(r => ({ area: r.area, coverage: r.explored ? r.explored.coverage : 'explorer failed' })),
 }
