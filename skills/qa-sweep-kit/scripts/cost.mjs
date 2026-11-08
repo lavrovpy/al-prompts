@@ -9,7 +9,6 @@ import { join } from "node:path";
 const PRICES = {
   "claude-opus-5-5": { in: 4, out: 20, w5: 5, w1h: 8, read: 0.2 },
   "claude-sonnet-5-5": { in: 2, out: 10, w5: 2.5, w1h: 4, read: 0.2 },
-  "claude-opus-4-8": { in: 5, out: 25, w5: 6.25, w1h: 10, read: 0.5 },
   "claude-haiku-5-5": { in: 0.1, out: 0.5, w5: 0.125, w1h: 0.2, read: 0.01 },
   "claude-haiku-5-5@long": { in: 0.5, out: 2.5, w5: 0.625, w1h: 1.0, read: 0.05 },
 };

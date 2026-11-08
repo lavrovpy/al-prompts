@@ -1,7 +1,7 @@
 ---
 name: qa-sweep-kit
 description: QA sweep — turn a running web app into verified, evidenced tracker tickets with a team of browser agents (agent-browser), then file them to Jira. Use when asked to QA, dogfood or bug-hunt an app at scale, or to build a ticket corpus for evaluating coding agents.
-compatibility: Claude Code only (runs a Workflow). Needs agent-browser, Node 18+, ffmpeg and jq; the sign-in helper is for Clerk and the filing scripts are for Jira.
+compatibility: Claude Code only (runs a Workflow). Needs agent-browser, Node 18+, ffmpeg and jq; the bundled sign-in helper is for Clerk (other auth providers need one with the same arguments) and the filing scripts are for Jira.
 ---
 
 # QA sweep kit
@@ -16,7 +16,7 @@ Read `references/pitfalls.md` before step 2; every item in it cost real time.
 
 2. **Isolated environment.** Clone the data into a throwaway database, start every service against the copy as detached processes (`nohup … & disown`, PIDs recorded), mirror production's provider settings from its deploy script, and generate edge-case fixtures (images with text in each language, oversized/corrupt/disguised files, odd names). Done when each service answers, one real call per external provider succeeds, and nothing points at production data.
 
-3. **Personas.** Create test users through the auth provider's admin API: an owner with rich data, a second user/attacker, a no-permission user, and one user per agent that mutates data or spends a per-user quota. Wire a sign-in helper (`scripts/clerk-signin.sh` for Clerk). Done when every persona signs into a fresh `agent-browser` session through the helper.
+3. **Personas.** Create test users through the auth provider's admin API: an owner with rich data, a second user/attacker, a no-permission user, and one user per agent that mutates data or spends a per-user quota. Wire a sign-in helper with the shape the brief and the agents call, `qa-signin <session> <user|anon> [start-path]`, backed by the provider's admin API (a sign-in or impersonation token). `scripts/clerk-signin.sh` is the Clerk version; for another provider, write the same contract against its API. Done when every persona signs into a fresh `agent-browser` session through the helper.
 
 4. **Brief and existing issues.** Export the tracker's issues to a TSV (key, type, status, summary). Fill `templates/BRIEF.md` for this app: environment table, local quirks that are not bugs, personas, data partitions, quotas. Done when the brief has no `<placeholder>` left and the TSV row count equals the tracker's issue count.
 
