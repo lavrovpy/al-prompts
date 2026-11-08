@@ -1,6 +1,6 @@
 A personal library of [Agent Skills](https://agentskills.io/specification) for software engineering, writing, interview prep, translation, language learning, and visual design.
 
-Each tool under `skills/` is packaged as an [Agent Skill](https://agentskills.io/specification) containing a `SKILL.md` instruction file, installable directly into modern agent environments and AI coding tools. `prompts/` holds plain prompts for tools that are not coding agents (voice-mode chat, image models).
+Each tool under `skills/` is packaged as an [Agent Skill](https://agentskills.io/specification) containing a `SKILL.md` instruction file, installable directly into modern agent environments and AI coding tools. `prompts/` holds plain prompts for tools that are not coding agents (voice-mode chat, image models). `workflows/` holds Claude Code workflows (multi-agent scripts) that a skill starts by name; the plugin registers them for you.
 
 ## Installing Skills
 
@@ -11,6 +11,12 @@ Clone the repository, then copy one or more skill folders from `skills/` to the 
 ```bash
 git clone https://github.com/lavrovpy/al-prompts.git
 cp -R al-prompts/skills/<skill-name> <your-tool-skills-directory>/
+```
+
+A skill that starts a workflow (`qa-sweep-kit`) also needs that workflow copied, because Claude Code starts named workflows only from a `.claude/workflows/` folder (user or project) or a plugin:
+
+```bash
+cp al-prompts/workflows/qa-sweep.js ~/.claude/workflows/
 ```
 
 ### 2) Claude Code plugin
@@ -57,7 +63,7 @@ Some skills use Claude Code-only frontmatter (`disable-model-invocation`, `argum
 
 - `skills/agent-tool-call-latency`: Measure every agent tool call on the machine from local session history and find where the time goes: slow commands, harness overhead (approval checks, automatic reviewers, slow releases), foreground waits hitting the tool's timeout, and locks that serialise parallel agents. Ships adapters for Claude Code, Codex and T3 Code; for any other harness the agent writes an adapter to a shared record format, or captures calls live through hooks.
   - Example: Run `/agent-tool-call-latency` (or `/agent-tool-call-latency 14 days`); get fixes ranked by hours recovered per month, each with confirmed evidence, then approve the ones to apply.
-- `skills/qa-sweep-kit`: Turn a running web app into verified, evidenced Jira tickets with a team of browser agents. One explorer per area of the app (search, upload, security, accessibility, mobile and so on) drives it through `agent-browser` and records screenshots and video; a fresh verifier re-reproduces each finding and tries to refute it; triage merges duplicates and drops what the tracker already has. Scripts file the survivors with inline screenshots and MP4s, link related tickets, and total the spend. The first run turned 211 findings into 141 tickets for about $271. Claude Code only: the sweep itself is the `qa-sweep` workflow in `workflows/qa-sweep.js`, which the plugin registers as `alavreniuk-skills:qa-sweep`; a manual install copies that file to `~/.claude/workflows/` as well. Needs `agent-browser`, Node 18+, ffmpeg and jq. The bundled sign-in helper is for Clerk; for another auth provider the agent writes one with the same arguments.
+- `skills/qa-sweep-kit`: Turn a running web app into verified, evidenced Jira tickets with a team of browser agents. One explorer per area of the app (search, upload, security, accessibility, mobile and so on) drives it through `agent-browser` and records screenshots and video; a fresh verifier re-reproduces each finding and tries to refute it; triage merges duplicates and drops what the tracker already has. Scripts file the survivors with inline screenshots and MP4s, link related tickets, and total the spend. The first run turned 211 findings into 141 tickets for about $271. Claude Code only: the sweep itself is the `qa-sweep` workflow in `workflows/qa-sweep.js`, which the plugin registers as `alavreniuk-skills:qa-sweep` (manual installs: see above). Needs `agent-browser`, Node 18+, ffmpeg and jq. The bundled sign-in helper is for Clerk; for another auth provider the agent writes one with the same arguments.
   - Example: Run `/qa-sweep-kit` for the app on `localhost:3000` and Jira project `APP`; it clones the database, creates test users and area charters, runs the sweep, then files one ticket and checks how it renders before filing the rest.
 - `skills/whiteboard`: Explain code, architecture or a planned change on an Excalidraw+ board: one frame per question, flow diagrams with labelled arrows, and code panels that quote the real repo. You edit the board in the browser and leave `@claude` notes on it; a background watcher picks them up and the agent answers each one with a sticky note next to it. Syncs merge three ways, so the agent's redraws never overwrite your edits. Needs Node, Python 3 and an Excalidraw+ personal API key.
   - Example: Give it a board link and ask how a request moves through your service; get a frame whose title is the answer, then write `@claude why is this cached?` on the board and get a reply beside your note.
