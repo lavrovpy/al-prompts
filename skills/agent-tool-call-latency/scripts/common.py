@@ -5,6 +5,10 @@ The record format is specified in references/SCHEMA.md; change both together.
 import json
 import os
 import re
+import shutil
+import sqlite3
+import sys
+import tempfile
 from datetime import datetime, timezone
 
 KINDS = {"shell", "read", "search", "edit", "web", "mcp", "subagent", "wait", "review", "ask_user", "other"}
@@ -18,17 +22,44 @@ OPTIONAL = {"command": str, "mcp_server": str, "mcp_tool": str, "detail": str, "
 COMMAND_MAX = 2000
 DETAIL_MAX = 160
 
+_URL_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://[^\s:/?#@\[\]'\"]*:)([^\s'\"?#]*@[^\s'\"?#]*)")
+
+
+def _mask_url_password(m):
+    rest = m.group(2)
+    if re.match(r"\d+/", rest):
+        return m.group(0)
+    # The password runs to the last @ before the host, so it may hold @ itself. An @ after a / is
+    # part of the path (`https://u:p@host/users/@me`), and a port before a / means the URL has no
+    # password at all (`http://localhost:3000/@me`).
+    end = rest.index("@")
+    while (nxt := rest.find("@", end + 1)) != -1 and "/" not in rest[end + 1:nxt]:
+        end = nxt
+    return m.group(1) + "[REDACTED]" + rest[end:]
+
+
 # Token shapes worth masking before a command is written to disk. Commands are kept so the
 # auditor can tell `pnpm e2e` from `pnpm test`; credentials in them are never needed.
+# The URL rule runs first: once a token rule has rewritten a user name to [REDACTED], its
+# brackets would hide the password behind it.
 _SECRET_PATTERNS = [
-    (re.compile(r"\b(sk|pk|rk)-[A-Za-z0-9_-]{16,}"), "[REDACTED]"),
+    (_URL_USERINFO, _mask_url_password),
+    (re.compile(r"\b(sk|pk|rk)[-_][A-Za-z0-9_-]{16,}"), "[REDACTED]"),
     (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"), "[REDACTED]"),
+    (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"), "[REDACTED]"),
     (re.compile(r"\bglpat-[A-Za-z0-9_-]{16,}"), "[REDACTED]"),
     (re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"), "[REDACTED]"),
     (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "[REDACTED]"),
+    (re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"), "[REDACTED]"),
+    (re.compile(r"\b(npm|hf)_[A-Za-z0-9]{30,}"), "[REDACTED]"),
     (re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"), "[REDACTED]"),
-    (re.compile(r"(?i)(authorization:\s*(?:bearer|basic)\s+)\S+"), r"\1[REDACTED]"),
-    (re.compile(r"(?i)\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|APIKEY)[A-Z0-9_]*\s*[=:]\s*)(?:\"[^\"]*\"|'[^']*'|\S+)"),
+    (re.compile(r"(?i)(authorization:\s*(?:(?:bearer|basic|token)\s+)?)[^\s'\"]+"), r"\1[REDACTED]"),
+    (re.compile(r"(?i)\b((?:x-)?[a-z-]*(?:api-key|token|secret)\s*:\s*)[^\s'\"]+"), r"\1[REDACTED]"),
+    (re.compile(r"(?i)(\s--?(?:password|passwd|pass|token|secret|api-key|apikey)(?:=|\s+))(?:\"[^\"]*\"|'[^']*'|\S+)"),
+     r"\1[REDACTED]"),
+    (re.compile(r"(\s(?:-u|--user)\s+[^\s:]+:)\S+"), r"\1[REDACTED]"),
+    (re.compile(r"(\bmysql(?:dump|admin)?\b[^\n;&|]*?\s-p)\S+"), r"\1[REDACTED]"),
+    (re.compile(r"(?i)\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|APIKEY|_KEY)[A-Z0-9_]*\s*[=:]\s*)(?:\"[^\"]*\"|'[^']*'|\S+)"),
      r"\1[REDACTED]"),
 ]
 
@@ -48,9 +79,20 @@ def clip(text, limit):
     return text if len(text) <= limit else text[:limit] + "…"
 
 
+_FRACTION = re.compile(r"\.(\d+)")
+
+
 def iso_ms(value):
-    """Epoch milliseconds from an ISO-8601 string (a trailing Z is accepted)."""
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000
+    """Epoch milliseconds from an ISO-8601 string (a trailing Z is accepted), or None when the
+    value is missing or malformed, so one bad line skips one call instead of the whole run."""
+    if not isinstance(value, str):
+        return None
+    # Python 3.9's fromisoformat accepts only 3- or 6-digit fractions.
+    value = _FRACTION.sub(lambda m: "." + m.group(1)[:6].ljust(6, "0"), value.replace("Z", "+00:00"), count=1)
+    try:
+        return datetime.fromisoformat(value).timestamp() * 1000
+    except ValueError:
+        return None
 
 
 def since_ms(day):
@@ -58,25 +100,67 @@ def since_ms(day):
 
 
 class Context:
-    """What every adapter receives: whose home to read, the window, and cwd substrings to drop."""
+    """What every adapter receives: whose home to read, the window, and which working directories
+    to drop (any cwd containing an exclude substring, or, when include substrings are given, any cwd
+    containing none of them)."""
 
-    def __init__(self, home, since, exclude_cwd=()):
+    def __init__(self, home, since, exclude_cwd=(), include_cwd=()):
         self.home = home
         self.since = since
         self.exclude_cwd = tuple(exclude_cwd)
+        self.include_cwd = tuple(include_cwd)
 
     def excluded(self, cwd):
-        return any(s in (cwd or "") for s in self.exclude_cwd)
+        cwd = cwd or ""
+        if self.include_cwd and not any(s in cwd for s in self.include_cwd):
+            return True
+        return any(s in cwd for s in self.exclude_cwd)
 
     def path(self, *parts):
         return os.path.join(self.home, *parts)
 
 
+def each_source(adapter, sources, read):
+    """Yield read(source) for each source, skipping (with a note on stderr) a source that fails to
+    parse, so one corrupt or reformatted file costs its own calls rather than the adapter's."""
+    for source in sources:
+        try:
+            yield from read(source)
+        except Exception as err:
+            print(f"{adapter}: skipped {source}: {type(err).__name__}: {err}", file=sys.stderr)
+
+
+def query_ro(path, sql, params=()):
+    """Rows of `sql` from a SQLite file opened read-only. When the owning app holds a lock, query
+    a temporary copy instead (with its -wal file, which holds the latest writes)."""
+    try:
+        db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
+            return db.execute(sql, params).fetchall()
+        finally:
+            db.close()
+    except sqlite3.OperationalError as err:
+        if "locked" not in str(err):
+            raise
+    tmp = tempfile.mkdtemp(prefix="agent-latency-db-")
+    try:
+        copy = os.path.join(tmp, os.path.basename(path))
+        for suffix in ("", "-wal"):
+            if os.path.exists(path + suffix):
+                shutil.copyfile(path + suffix, copy + suffix)
+        db = sqlite3.connect(copy)
+        try:
+            return db.execute(sql, params).fetchall()
+        finally:
+            db.close()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def record(**fields):
     """Build a call record, clipping free text. Raises ValueError on a missing field or unknown kind.
 
-    `_cwd` may be passed for frontend claims during extraction; extract.py strips it before writing,
-    so full working-directory paths never reach calls.jsonl.
+    `_cwd` may be passed for frontend claims during extraction; extract.py strips it before writing.
     """
     for key in REQUIRED:
         if fields.get(key) is None:
@@ -145,8 +229,40 @@ def read_jsonl(path):
                 continue
 
 
+def json_object(text):
+    """The JSON object in `text` (str or bytes), or {} when it is empty, malformed or not an object."""
+    if isinstance(text, bytes):
+        text = text.decode(errors="replace")
+    try:
+        value = json.loads(text or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def project_name(cwd):
+    """The `project` field: the working directory's basename, or None without one."""
+    return os.path.basename((cwd or "").rstrip("/")) or None
+
+
+def mcp_names(tool):
+    """(server, tool) from an MCP tool name, or (None, None) when the name cannot be split.
+
+    Only `mcp__server__tool` and `mcp:server.tool` split reliably. In spellings such as
+    `mcp_server_tool` or `mcp-server-tool`, server and tool names contain the separator themselves
+    (`claude_ai_Notion`, `resolve-library-id`), so any split would credit calls to the wrong server.
+    """
+    if tool.startswith("mcp__"):
+        parts = tool.split("__")
+        return parts[1] or None, "__".join(parts[2:]) or None
+    if tool.startswith("mcp:") and "." in tool:
+        server, _, name = tool[len("mcp:"):].partition(".")
+        return server or None, name or None
+    return None, None
+
+
 _KIND_HINTS = [
-    ("mcp", re.compile(r"^mcp[_:.]|__")),
+    ("mcp", re.compile(r"^mcp[-_:.]|__")),
     ("shell", re.compile(r"bash|shell|exec|terminal|run_command|command")),
     ("edit", re.compile(r"edit|write|patch|replace|create_file|insert")),
     ("read", re.compile(r"read|view|cat_file|open_file|image")),

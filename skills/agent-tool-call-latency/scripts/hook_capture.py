@@ -3,8 +3,8 @@
 
 Wire it as the harness's pre-tool and post-tool hook (references/ADAPTERS.md § Capturing with hooks):
 
-    hook_capture.py pre  --agent <agent> [--harness <surface>]
-    hook_capture.py post --agent <agent> [--harness <surface>]
+    hook_capture.py pre  --agent <agent> [--harness <harness>]
+    hook_capture.py post --agent <agent> [--harness <harness>]
 
 The hook payload is read from stdin as JSON; field names vary by harness, so several spellings are
 tried. The script never blocks the tool: it prints nothing, swallows every error, and exits 0.
@@ -29,6 +29,13 @@ def pick(payload, field):
         if payload.get(key) not in (None, ""):
             return payload[key]
     return None
+
+
+def failed(payload):
+    """Claude Code puts a failed result under tool_response; other harnesses report it at the top."""
+    response = payload.get("tool_response") or payload.get("toolResponse")
+    nested = response if isinstance(response, dict) else {}
+    return bool(payload.get("error") or payload.get("is_error") or nested.get("error") or nested.get("is_error"))
 
 
 def main():
@@ -58,9 +65,9 @@ def main():
 
     line = {"t": t, "event": event, "agent": opts.get("--agent", "unknown"), "harness": opts.get("--harness"),
             "session": pick(payload, "session"), "id": pick(payload, "id"), "tool": tool,
-            "project": os.path.basename(str(pick(payload, "cwd") or os.getcwd())),
+            "cwd": str(pick(payload, "cwd") or os.getcwd()),
             "command": clip(command, COMMAND_MAX) if command else None,
-            "error": bool(payload.get("error") or payload.get("is_error"))}
+            "error": failed(payload)}
     path = os.environ.get("AGENT_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/agent-tool-call-latency/hooks.jsonl")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a") as fh:
