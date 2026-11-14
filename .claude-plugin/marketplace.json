@@ -22,6 +22,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/address-review-comments",
         "./skills/agent-tool-call-latency",
         "./skills/ai-setup-audit",
         "./skills/boil-the-ocean",
