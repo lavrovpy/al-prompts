@@ -11,7 +11,9 @@ A review comment is a **claim** about the code. A reviewer, person or bot, can b
 
 ## 1. Collect
 
-For each PR in scope, list every unresolved thread with its file, line, author and full text ([thread commands](#thread-commands)). Check whether one PR's branch contains another's commits (`git merge-base --is-ancestor <a> <b>`): those are **stacked**, and step 4 handles them together.
+For each PR in scope, list every unresolved review thread with its file, line, author and full text, through the host's CLI or API. Where the CLI shows comments without their threads, ask the API: on GitHub, threads and whether they are resolved come only from GraphQL. Leave out notes that hold no finding, such as a bot's summary.
+
+Check whether one PR's branch contains another's commits: those are **stacked**, and step 4 handles them together.
 
 Done when the list holds as many threads as the host counts unresolved on each PR.
 
@@ -62,6 +64,8 @@ Done when the checks pass on every branch you changed and each PR's head is the 
 
 ## 5. Reply on every thread
 
+Reply inside the thread, so each answer sits under the comment it answers.
+
 - **Fixed:** the commit, what changed in one sentence, the test that covers it. Resolve the thread.
 - **Declined, bot reviewer:** the reason and its evidence. Leave the thread unresolved.
 - **Declined, human reviewer:** a decline speaks for the author. Put the drafted reply in the report and post it once the user agrees.
@@ -76,36 +80,3 @@ Lead with the totals: per PR, how many comments, fixed, declined.
 - Declined: grouped by reason, with the count per group.
 - What you did beyond the comments (a merge between stacked branches), and what a fix leaves uncovered on purpose.
 - Which checks ran on which branch.
-
-## Thread commands
-
-GitHub lists review threads and resolves them only through GraphQL:
-
-```bash
-# list; keep the nodes where isResolved is false
-gh api graphql -F owner=<owner> -F repo=<repo> -F n=<number> -f query='
-  query($owner:String!,$repo:String!,$n:Int!){repository(owner:$owner,name:$repo){
-    pullRequest(number:$n){reviewThreads(first:100){nodes{
-      id isResolved path line comments(first:50){nodes{databaseId author{login} body}}}}}}}'
-# reply to a thread: <comment-id> is the databaseId of its first comment
-gh api repos/<owner>/<repo>/pulls/<number>/comments/<comment-id>/replies -F body=@reply.md
-# resolve: <thread-id> is the thread's node id
-gh api graphql -F id=<thread-id> -f query='
-  mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}'
-```
-
-GitLab, from inside the repository (`:id` resolves to its project):
-
-```bash
-# list
-glab api "projects/:id/merge_requests/<iid>/discussions?per_page=100" --paginate \
-  | jq '.[] | select(.notes[0].resolvable and (.notes[0].resolved | not))
-        | {id, author: .notes[0].author.username, path: .notes[0].position.new_path,
-           line: (.notes[0].position.new_line // .notes[0].position.old_line), body: .notes[0].body}'
-# reply
-glab api -X POST "projects/:id/merge_requests/<iid>/discussions/<discussion-id>/notes" -F body=@reply.md
-# resolve
-glab api -X PUT "projects/:id/merge_requests/<iid>/discussions/<discussion-id>?resolved=true"
-```
-
-Write each reply to a file and send the file: backticks, `$` and a leading `@` break inline bodies.
