@@ -391,8 +391,37 @@ class GuiHarnessAdapters(unittest.TestCase):
                          ("shell", 3500, "app"))
         self.assertTrue(calls["toolu_2"]["human_wait"])
         self.assertEqual(calls["toolu_2"]["approval"], "outOfWorkspace")
-        self.assertEqual(set(self.extract("cursor", "--exclude-cwd", "/w/app")), {"toolu_2"})
-        self.assertEqual(set(self.extract("cursor", "--include-cwd", "/w/app")), {"toolu_1"})
+        self.assertEqual(calls["toolu_2"]["project"], "app")
+        self.assertEqual(set(self.extract("cursor", "--exclude-cwd", "/w/app")), set())
+        self.assertEqual(set(self.extract("cursor", "--include-cwd", "/w/app")), {"toolu_1", "toolu_2"})
+
+    def test_cursor_calls_take_their_chats_first_working_directory(self):
+        def shell(call_id, cwd, start):
+            return dict(cursor_bubble(call_id, "run_terminal_command_v2", dict(command="ls", cwd=cwd)),
+                        startedAtMs=start, completedAtMs=start + 10)
+        cursor_db(self.home, "Library/Application Support/Cursor", [
+            ("bubbleId:c1:b1", dict(cursor_bubble("r1", "read_file_v2", {}), startedAtMs=START_MS - 10)),
+            ("bubbleId:c1:b2", shell("s1", "/w/bench", START_MS)),
+            ("bubbleId:c1:b3", shell("s2", "/w/other", START_MS + 10)),
+            ("bubbleId:c1:b4", dict(cursor_bubble("r2", "read_file_v2", {}), startedAtMs=START_MS + 20)),
+            ("bubbleId:c2:b1", cursor_bubble("r3", "read_file_v2", {}))])
+        calls = self.extract("cursor")
+        self.assertEqual({i: c.get("project") for i, c in calls.items()},
+                         {"r1": "bench", "s1": "bench", "s2": "other", "r2": "bench", "r3": None})
+        self.assertEqual(set(self.extract("cursor", "--include-cwd", "/w/bench")), {"r1", "s1", "r2"})
+
+    def test_cursor_skips_malformed_and_untimed_rows_and_counts_them(self):
+        bad_policy = cursor_bubble("x1", "run_terminal_command_v2", dict(requestedSandboxPolicy="workspace"))
+        untimed = dict(createdAt="2026-10-01T10:00:00.000Z", toolFormerData=dict(name="read_file", toolCallId="u1"))
+        before_window = dict(untimed, createdAt="2025-01-01T10:00:00.000Z")
+        cursor_db(self.home, "Library/Application Support/Cursor", [
+            ("bubbleId:c1:b1", bad_policy), ("bubbleId:c1:b2", cursor_bubble("ok", "read_file_v2", {})),
+            ("bubbleId:c1:b3", untimed), ("bubbleId:c1:b4", before_window)])
+        result, calls = self.run_extract("--only", "cursor")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(set(calls), {"ok"})
+        self.assertIn("skipped 1 tool calls without startedAtMs", result.stderr)
+        self.assertIn("skipped 1 tool calls whose fields have unexpected types", result.stderr)
 
     def test_cursor_takes_mcp_server_and_tool_from_params_on_linux_and_windows(self):
         cursor_db(self.home, ".config/Cursor", [
@@ -421,9 +450,21 @@ class GuiHarnessAdapters(unittest.TestCase):
                          ("shell", 300_000, "find . -maxdepth 1"))
         self.assertTrue(calls["call_1"]["human_wait"])
         self.assertFalse(calls["call_2"].get("human_wait"))
-        self.assertEqual(calls["call_2"]["kind"], "read")
-        self.assertEqual(set(self.extract("antigravity", "--exclude-cwd", "/w/app")), {"call_2"})
-        self.assertEqual(set(self.extract("antigravity", "--include-cwd", "/w/app")), {"call_1"})
+        self.assertEqual((calls["call_2"]["kind"], calls["call_2"]["project"]), ("read", "app"))
+        self.assertEqual(set(self.extract("antigravity", "--exclude-cwd", "/w/app")), set())
+        self.assertEqual(set(self.extract("antigravity", "--include-cwd", "/w/app")), {"call_1", "call_2"})
+
+    def test_antigravity_calls_take_their_conversations_first_working_directory(self):
+        antigravity_db(self.home, [
+            (3, ag_step("call_1", "view_file", {}, START_MS + 20, [])),
+            (3, ag_step("call_2", "run_command", dict(CommandLine="ls", Cwd="/w/bench"), START_MS + 20, [])),
+            (3, ag_step("call_3", "run_command", dict(CommandLine="ls", Cwd="/w/other"), START_MS + 20, []))])
+        open(os.path.join(self.home, ".gemini/antigravity/conversations/old.pb"), "wb").close()
+        result, calls = self.run_extract("--only", "antigravity")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual({i: c["project"] for i, c in calls.items()},
+                         {"call_1": "bench", "call_2": "bench", "call_3": "other"})
+        self.assertIn("skipped 1 encrypted .pb conversations", result.stderr)
 
     def test_antigravity_skips_steps_whose_wire_types_changed_and_counts_them(self):
         good = ag_step("call_1", "view_file", {}, START_MS + 20, [(3, START_MS + 20)])

@@ -5,6 +5,9 @@ Each row of `steps` holds a protobuf `metadata` blob with no published schema. T
 below were read from real rows on 2026-10-21 and can shift between releases. A step whose fields
 no longer have the expected wire types is skipped and counted on stderr: re-read the layout then,
 and when the validator warns.
+
+Only command steps carry a working directory, so every call takes the first one in its conversation.
+Older conversations are encrypted `.pb` files beside the `.db` ones; they are counted on stderr, not read.
 """
 import glob
 import os
@@ -96,38 +99,43 @@ def _step(meta):
             AWAITING_APPROVAL in statuses)
 
 
-def _dbs(ctx):
+def _files(ctx, ext):
     found = []
     for root in ROOTS:
-        found += glob.glob(ctx.path(".gemini", root, "conversations", "*.db"))
+        found += glob.glob(ctx.path(".gemini", root, "conversations", "*" + ext))
     return [p for p in found if os.path.getmtime(p) * 1000 >= ctx.since]
 
 
 def detect(ctx):
-    return _dbs(ctx)
+    return _files(ctx, ".db")
 
 
 def records(ctx):
-    return each_source(NAME, _dbs(ctx), lambda path: _conversation(ctx, path))
+    encrypted = len(_files(ctx, ".pb"))
+    if encrypted:
+        print(f"{NAME}: skipped {encrypted} encrypted .pb conversations changed in the window", file=sys.stderr)
+    return each_source(NAME, _files(ctx, ".db"), lambda path: _conversation(ctx, path))
 
 
 def _conversation(ctx, path):
     harness = ROOTS[os.path.basename(os.path.dirname(os.path.dirname(path)))]
     session = os.path.splitext(os.path.basename(path))[0]
-    skipped = 0
-    for idx, status, meta in query_ro(path, "select idx, status, metadata from steps where metadata is not null"):
+    steps, skipped = [], 0
+    for idx, status, meta in query_ro(path, "select idx, status, metadata from steps where metadata is not null "
+                                            "order by idx"):
         try:
             step = _step(meta)
         except (ValueError, IndexError):
             skipped += 1
             continue
-        if step is None:
-            continue
-        call_id, name, args, start, end, waited = step
+        if step is not None:
+            steps.append((idx, status, step))
+    conversation_cwd = next((_cwd(step[2]) for _, _, step in steps if _cwd(step[2])), "")
+    for idx, status, (call_id, name, args, start, end, waited) in steps:
         if start < ctx.since:
             continue
         kind = KINDS.get(name) or guess_kind(name)
-        cwd = str(args.get("Cwd") or args.get("cwd") or "")
+        cwd = _cwd(args) or conversation_cwd
         if ctx.excluded(cwd):
             continue
         fields = dict(agent=AGENT, harness=harness, session=session, id=call_id or f"{session}:{idx}", ts=start,
@@ -142,3 +150,7 @@ def _conversation(ctx, path):
     if skipped:
         print(f"{NAME}: {path}: skipped {skipped} steps that no longer match the field layout in "
               f"adapters/antigravity.py", file=sys.stderr)
+
+
+def _cwd(args):
+    return str(args.get("Cwd") or args.get("cwd") or "")

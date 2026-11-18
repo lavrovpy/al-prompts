@@ -2,20 +2,23 @@
 
 Each tool call is one `bubbleId:<composerId>:<bubbleId>` row whose JSON carries `toolFormerData`
 (name, params, status, toolCallId) and the call's own `startedAtMs` / `completedAtMs` (exact).
+Only shell calls carry a working directory, so every call takes the first one found in its chat.
 """
 import json
 import os
+import sys
 
-from common import each_source, guess_kind, json_object, project_name, query_ro, record
+from common import each_source, guess_kind, iso_ms, json_object, project_name, query_ro, record
 
 NAME = "cursor"
 AGENT = "Cursor"
 KINDS = {"run_terminal_command_v2": "shell", "run_terminal_cmd": "shell", "read_file_v2": "read", "read_file": "read",
          "read_lints": "read", "edit_file_v2": "edit", "edit_file": "edit", "search_replace": "edit", "write": "edit",
          "delete_file": "edit", "ripgrep_raw_search": "search", "grep_search": "search", "glob_file_search": "search",
-         "list_dir": "search", "codebase_search": "search", "web_search": "web", "await": "wait",
-         "ask_question": "ask_user", "task_v2": "subagent", "todo_write": "other", "update_current_step": "other",
-         "get_mcp_tools": "other", "search_conversations": "other", "set_active_branch": "other"}
+         "list_dir": "search", "codebase_search": "search", "semantic_search_full": "search", "web_search": "web",
+         "await": "wait", "ask_question": "ask_user", "task_v2": "subagent", "todo_write": "other",
+         "update_current_step": "other", "get_mcp_tools": "other", "search_conversations": "other",
+         "set_active_branch": "other"}
 # Cursor's user-data folder on macOS, Linux and Windows (%APPDATA% is normally AppData/Roaming).
 DATA_DIRS = [("Library", "Application Support", "Cursor"), (".config", "Cursor"), ("AppData", "Roaming", "Cursor")]
 
@@ -33,15 +36,37 @@ def records(ctx):
     return each_source(NAME, _dbs(ctx), lambda path: _database(ctx, path))
 
 
+TOOL_BUBBLES = ("from cursorDiskKV where key like 'bubbleId:%' and json_valid(value) "
+                "and json_extract(value, '$.toolFormerData.name') is not null ")
+
+
 def _database(ctx, path):
-    rows = query_ro(
-        path,
-        "select key, value from cursorDiskKV where key like 'bubbleId:%' and json_valid(value) "
-        "and json_extract(value, '$.toolFormerData.name') is not null "
-        "and json_extract(value, '$.startedAtMs') >= ? and json_extract(value, '$.completedAtMs') is not null",
-        (int(ctx.since),))
+    # Cursor wrote no startedAtMs before September 2026; createdAt tells which of those fall in the window.
+    created = query_ro(path, "select json_extract(value, '$.createdAt') " + TOOL_BUBBLES
+                       + "and json_extract(value, '$.startedAtMs') is null")
+    untimed = sum(1 for (c,) in created if (iso_ms(c) or ctx.since) >= ctx.since)
+    # Earlier calls are read too: a chat's working directory may appear only before the window.
+    rows = query_ro(path, "select key, value " + TOOL_BUBBLES + "and json_extract(value, '$.startedAtMs') is not null "
+                    "and json_extract(value, '$.completedAtMs') is not null")
+    calls, malformed = [], 0
     for key, value in rows:
-        yield from _call(ctx, path, key, json.loads(value))
+        try:
+            calls.append(_call(path, key, json.loads(value)))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            malformed += 1
+    calls.sort(key=lambda r: r["ts"])
+    chat_cwd = {}
+    for r in calls:
+        if r["_cwd"]:
+            chat_cwd.setdefault(r["session"], r["_cwd"])
+    for r in calls:
+        cwd = r["_cwd"] or chat_cwd.get(r["session"], "")
+        if r["ts"] >= ctx.since and not ctx.excluded(cwd):
+            yield record(**dict(r, _cwd=cwd, project=project_name(cwd)))
+    if untimed:
+        print(f"{NAME}: {path}: skipped {untimed} tool calls without startedAtMs", file=sys.stderr)
+    if malformed:
+        print(f"{NAME}: {path}: skipped {malformed} tool calls whose fields have unexpected types", file=sys.stderr)
 
 
 def _mcp(params):
@@ -59,7 +84,8 @@ def _mcp(params):
     return server, tool[len(server) + 1:] if tool.startswith(server + "-") else tool
 
 
-def _call(ctx, path, key, b):
+def _call(path, key, b):
+    """The record of one tool bubble. Raises on a bubble whose fields have unexpected types."""
     t = b["toolFormerData"]
     extra = t.get("additionalData") if isinstance(t.get("additionalData"), dict) else {}
     params = json_object(t.get("params"))
@@ -68,8 +94,6 @@ def _call(ctx, path, key, b):
     kind = "mcp" if server else KINDS.get(name) or guess_kind(name)
     paths = (params.get("requestedSandboxPolicy") or {}).get("additionalReadwritePaths") or []
     cwd = params.get("cwd") or (paths[0] if paths else "")
-    if ctx.excluded(cwd):
-        return
     fields = dict(agent=AGENT, harness="Cursor", session=key.split(":")[1], id=t.get("toolCallId") or b.get("bubbleId"),
                   ts=b["startedAtMs"], dur_ms=max(0, b["completedAtMs"] - b["startedAtMs"]), tool=name, kind=kind,
                   error=t.get("status") not in ("completed", None) or extra.get("status") == "error",
@@ -83,4 +107,4 @@ def _call(ctx, path, key, b):
         fields.update(mcp_server=server, mcp_tool=tool)
     if extra.get("blockReason"):
         fields["approval"] = str(extra["blockReason"])
-    yield record(**fields)
+    return record(**fields)

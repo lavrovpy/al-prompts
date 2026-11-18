@@ -59,6 +59,13 @@ These come from bugs found in real logs; each one silently skews the totals.
 - Three spot checks it prints match the raw log: open each `src`, find the issuing line, and confirm the duration to within a second.
 - The call count of one session the user can see in the harness's UI matches the adapter's count for that session.
 
+## Gaps in the built-in adapters
+
+Two stores hold calls no adapter can time. When extraction reports them, note the count in `notes.md` and list it under `not_extracted` in the report:
+
+- **Cursor** wrote no `startedAtMs` before September 2026: `cursor: <db>: skipped <n> tool calls without startedAtMs`.
+- **Antigravity** keeps older conversations as encrypted `.pb` files: `antigravity: skipped <n> encrypted .pb conversations changed in the window`.
+
 ## Capturing with hooks
 
 When a harness's history has no per-call timestamps, start recording its calls live instead. Most harnesses can run a command before and after each tool call; wire both to `scripts/hook_capture.py`, which writes `~/.cache/agent-tool-call-latency/hooks.jsonl` (or `$AGENT_LATENCY_HOOK_LOG`), and the `hooklog` adapter pairs the lines. For Claude Code the wiring in `settings.json` is:
