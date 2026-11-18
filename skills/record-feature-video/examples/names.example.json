@@ -1,0 +1,12 @@
+{
+  "hosts": ["app.example.com", "tracker.example.com", "localhost"],
+  "replace": [
+    { "pattern": "Jane Doe", "to": "Demo Bot" },
+    { "pattern": "jane\\.doe@example\\.com", "to": "bot@example.com" }
+  ],
+  "avatar_ids": ["<id that appears in the person's avatar image URL>"],
+  "badge": "DB",
+  "keep_selectors": "[aria-label^=\"Account\"], .mention",
+  "hide_typing_in": "input[aria-label=\"Assigned To\"]",
+  "ocr": "jane|doe"
+}

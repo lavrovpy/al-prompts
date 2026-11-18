@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Caption card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f5f4f1; --ink: #1c1b19; --muted: #5d5a54; }
+  html, body { margin: 0; width: 1920px; height: 1080px; background: var(--bg); color: var(--ink); font-family: "Inter", system-ui, sans-serif; }
+  .frame { box-sizing: border-box; width: 1920px; height: 1080px; padding: 140px 180px; display: flex; flex-direction: column; justify-content: center; }
+  .logo { height: 44px; width: auto; align-self: flex-start; margin-bottom: 56px; }
+  h1 { margin: 0; font-size: 84px; line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; max-width: 1500px; }
+  p { margin: 32px 0 0; font-size: 36px; line-height: 1.4; color: var(--muted); max-width: 1400px; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <img class="logo" id="logo" alt="">
+  <h1 id="title"></h1>
+  <p id="sub"></p>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  for (const id of ["title", "sub"]) {
+    const el = document.getElementById(id);
+    const v = q.get(id) || "";
+    if (v) el.textContent = v; else el.remove();
+  }
+  const logo = document.getElementById("logo");
+  if (q.get("logo")) logo.src = q.get("logo"); else logo.remove();
+</script>
+</body>
+</html>

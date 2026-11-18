@@ -1,0 +1,7 @@
+# name|title|sub   (sub is optional; time and stage hints go there)
+all-title|Checkout, from cart to order|Three short scenes from the new checkout.
+all-end|Try it on staging today|
+s1-title|A coupon applies before payment|The total updates as soon as the code is accepted.
+s1-c1|A shopper opens the cart|
+s1-c2|They enter a coupon code|
+s1-c3|The order goes through at the discounted price|About 10 seconds later
