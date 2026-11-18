@@ -1,6 +1,6 @@
 ---
 name: intent-rich-pr
-description: Write the title and description of a GitHub pull request or GitLab merge request, and open it. Purpose, the problem the change exists to solve, is required and comes first; refuse to open the PR/MR when no purpose is given or inferable. Review focus, the 1–3 places a human must still read, is required. Screenshots are required whenever the diff changes something a person sees. Use when drafting, creating, opening, or submitting a PR, MR, or its description, including each PR in a stack.
+description: Write the title and description of a GitHub pull request or GitLab merge request around its purpose, with before/after screenshots when something visible changed, and open it. Use when drafting, creating, opening, or submitting a PR, MR, or its description, including each PR in a stack.
 ---
 
 # Intent-Rich PR
@@ -17,7 +17,7 @@ Sources, in order:
 2. The linked issue or ticket's problem statement, rather than the solution it proposes. Fetch GitHub issues with `gh issue view`, GitLab ones with `glab issue view`. Never invent ticket context.
 3. The diff, when the problem is obvious from the code.
 
-An account of what was built, which files moved, or which tests passed describes the solution, so it does not pass the gate. If no source gives a purpose, ask the user and do not open the PR/MR until you have one.
+An account of what was built, which files moved, or which tests passed describes the solution, so it does not pass the gate. If no source gives a purpose, ask the user and do not open the PR/MR until you have one. When a skill that must not ask, such as `ship`, runs this one, skip the PR/MR and report that no purpose was found.
 
 Done when: a reviewer who never saw the ticket can answer "why does this need to land?" from the Summary alone.
 
@@ -56,8 +56,8 @@ Omit the section when nothing visible changed.
 
 - Title: name the cause, what is wrong in the files this diff changes, in 72 characters or fewer, with the ticket key when there is one. The symptom goes in Summary; the mechanism stays in the diff.
 - Base: the branch below in a stack, otherwise the repo's default branch unless the user named another.
-- GitHub: `gh pr create --title <title> --body-file <file>`, adding `--base <branch>` in a stack and `--draft` when screenshots are owed.
-- GitLab: `glab mr create --title <title> --description "$(cat <file>)" --yes`, adding `--target-branch <branch>` in a stack and `--draft` when screenshots are owed.
+- GitHub: `gh pr create --title <title> --body-file <file>`, adding `--base <branch>` in a stack, `--head <branch>` when that branch is not checked out, and `--draft` when screenshots are owed.
+- GitLab: `glab mr create --title <title> --description-file <file> --yes`, adding `--target-branch <branch>` in a stack, `--source-branch <branch>` when that branch is not checked out, and `--draft` when screenshots are owed.
 - Report the URL, base and head branches, draft status, and any screenshots still owed.
 
 When the user asked only for a description, reply with the title and body in one markdown block and stop.

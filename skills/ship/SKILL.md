@@ -1,19 +1,19 @@
 ---
 name: ship
-description: Commit, push with lease, and open or update the PR/MR for the current branch in one step, as a stack of small PRs when the work splits into reviewable steps. Use when work is at a shippable point, when a Stop hook reports unshipped work, or when the user says ship, commit and push, or open a PR/MR.
+description: Commit, push with lease, and open the PR/MR for the current work in one step, as a stack of small PRs when the work splits into reviewable steps, then hand the PR to address-review-comments when the repo has a review bot. Use when work is at a shippable point, when a Stop hook reports unshipped work, or when the user says ship or commit and push.
 ---
 
-Ship the current branch. Do not ask for confirmation at any step.
+Ship the current work. Do not ask for confirmation at any step.
 
-1. If `git branch --show-current` is `main`, `master` or `develop`: create a branch first (`git switch -c <short-kebab-name>`), then continue.
-2. Prefer [stacked PRs](https://docs.github.com/en/pull-requests/get-started/about-stacked-prs): when the work splits into steps a reviewer can judge one at a time (a refactor, then the feature on top of it), ship one branch and PR per step, each based on the one below it, instead of one large PR. A change that is already one small step stays one PR.
-   - GitHub: use `gh stack` (`gh extension install github/gh-stack` if `gh extension list` lacks it); it cascades the rebase through the stack.
-   - GitLab: use `glab stack` (`create`, `save`, then `sync`, which rebases, pushes and opens the MRs).
-   - Without either tool, chain plain branches and set each PR's base to the branch below (`gh pr create --base`, `glab mr create --target-branch`).
-   - Push each branch and open its PR from the bottom of the stack up, so every base exists first.
-3. Commit message: follow `.agents/skills/git-commit-message` if the repo has it; otherwise a conventional commit (`type(scope): imperative summary`, body with the why) from `git diff` and `git status`. Then `git add -A && git commit -F <file>`.
-4. Push: `git push --force-with-lease -u origin HEAD`. Never `--force`.
-5. PR/MR for every branch that has none. Write the title and body with the repo's `.agents/skills/merge-request-description` if present, otherwise with the `intent-rich-pr` skill, one body per PR in a stack. If no purpose can be inferred, skip the PR/MR and say so in one line.
-   - GitHub: `gh pr create --title <title> --body-file <file>`.
-   - GitLab: `glab mr create --title <title> --description "$(cat <file>)" --yes` (glab has no description-file flag).
-6. Report one line per PR: short sha, branch, URL, and whether screenshots are still owed.
+1. **Branch.** If `git branch --show-current` is `main`, `master` or `develop`, create a branch first (`git switch -c <short-kebab-name>`).
+2. **Choose the files.** Stage by path only the files this task changed; never `git add -A`. Leave unstaged, and list in the report, anything secret-like (`.env*`, keys, `*.pem`, credentials) and changes the task did not make, such as another session's edits.
+3. **Split.** Prefer [stacked PRs](https://docs.github.com/en/pull-requests/get-started/about-stacked-prs): when the work splits into steps a reviewer can judge one at a time (a refactor, then the feature on top of it), give each step its own branch, based on the one below. A change that is already one small step stays one branch. Done when every staged file belongs to exactly one branch.
+4. **Commit** on each branch, bottom up, only that step's files. Message: follow `.agents/skills/git-commit-message` if the repo has it; otherwise a conventional commit (`type(scope): imperative summary`, body with the why) from that step's diff. `git commit -F <file>`.
+5. **Push** with lease, never `--force`:
+   - One branch: `git push --force-with-lease -u origin HEAD`.
+   - GitHub stack: `gh stack push` (`gh extension install github/gh-stack` if `gh extension list` lacks it).
+   - GitLab stack: `glab stack sync --skip-mr-creation`, so the MRs get written bodies in step 6.
+   - Without a stack tool: push each branch with `--force-with-lease`, bottom up.
+6. **Open** a PR/MR for every branch that has none, bottom up, so every base exists first. Write and open each one per the repo's `.agents/skills/merge-request-description` if present, otherwise per `intent-rich-pr` (its "Open the PR/MR" section sets base, draft and screenshots). In a GitHub stack, then group them with `gh stack link <branch>…`, bottom to top. When no purpose can be inferred, skip that PR/MR and say so in one line.
+7. **Report** one line per PR: short sha, branch, URL, draft or ready, and the local paths of screenshots still owed. Then the files left unstaged.
+8. **Review bot.** Hand the PRs to `address-review-comments`, which waits for the repo's review bot only when past PRs show one, addresses one round, and reports on its own.
