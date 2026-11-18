@@ -15,7 +15,7 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 ## A shared lock or fixed ports serialise parallel agents
 
-*Confirmed 2026-10-20, quick-tts.*
+*Confirmed 2026-10-20, an Electron app's end-to-end harness.*
 
 - **Signal:** `lock-wrapped run` with a low p50 and a p90 near the cap, mostly in one project; or e2e runs whose p90 is far above their p50.
 - **Cause:** the test harness uses a fixed resource (a debug port, a lock file, a shared temp path, one browser session), so agents in parallel checkouts queue behind one lock or refuse each other's ports.
@@ -37,7 +37,7 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 - **Signal:** *Releases where cheap operations were slow*.
 - **Cause:** a regression in one release. In those three releases an edit took about 1 s; other releases took about 50 ms, and 2.1.303 took 22 ms.
-- **Confirm:** the same operation in the same mode is fast in neighbouring releases. Mode differences can mimic a slow release, so compare within one mode.
+- **Confirm:** the same operation, through the same approval path and in the same harness, is fast in neighbouring releases. *Releases where cheap operations were slow* compares within one approval path only, so a harness or project with heavy hooks can still make a release look slow. Claude Code 2.1.304 is flagged for its edits under `mode`, but they took 529 ms at p50 in a demo project whose settings run 6 PreToolUse and 7 PostToolUse hooks, and 11–16 ms in most other projects: the release was not slow.
 - **Fix (agent environment):** upgrade, or pin a known-good release until a fix ships.
 
 ## An automatic reviewer holds each escalated action
@@ -49,9 +49,27 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 - **Confirm:** list which actions were reviewed. Each reviewer session's prompt carries the action as `Planned action JSON: {...}`; count them by command family.
 - **Fix (agent environment):** a `prefix_rule(pattern=[...], decision="allow")` in `~/.codex/rules/*.rules` runs a matching command outside the sandbox without review. Linear `bash -lc` chains are split and each part must match. For MCP tools, `[mcp_servers.<server>.tools.<tool>] approval_mode = "approve"` in `config.toml`. Keep reviewing tools that run arbitrary code (a JavaScript REPL, a browser `evaluate`): the reviewer is their only check.
 
+## Hooks on every call
+
+*Confirmed 2026-10-21, Claude Code.*
+
+- **Signal:** one harness or project whose cheap operations (reads, edits) cost hundreds of milliseconds more than the same release elsewhere.
+- **Cause:** a chain of pre-tool and post-tool hooks in that project's settings runs on every call. A workflow-engine demo project ran 5 PreToolUse and 3 PostToolUse hooks per edit: 676 ms per edit against 12 ms on the same release elsewhere.
+- **Confirm:** list the hooks and their matchers in the project's agent settings, and compare the same operation in a session of that project with one elsewhere.
+- **Fix (repository):** narrow each hook's matcher to the tools that need it, or make the hook cheaper.
+
+## An approval prompt nobody is watching
+
+*Confirmed 2026-10-21, Antigravity and Cursor.*
+
+- **Signal:** *Waiting on you: approval prompt* with waits of minutes to hours, on commands that only read.
+- **Cause:** the harness stops a read-only command, or an edit outside the folder it has open, until the user approves it, and the agent's run stands still meanwhile. The adapters mark such calls `human_wait`; Cursor's also carry the reason in `approval` (`outOfWorkspace`).
+- **Confirm:** read the waiting commands; a `find` or `git status` that took minutes waited for a person.
+- **Fix (agent environment):** add read-only prefixes to the harness's allow list (Antigravity: Settings > General > Permission Settings, or per project; its Allow, Deny and Ask rules take precedence over the permission preset). For edits outside the open folder, open the worktree itself.
+
 ## Start-up repeated for every call
 
-*Confirmed 2026-10-20, oe3d.*
+*Confirmed 2026-10-20, a 3D asset pipeline.*
 
 - **Signal:** `screenshot run`, `Blender headless` or a script family with many calls and a p50 of tens of seconds.
 - **Cause:** each call launches a heavy process (a headless browser, a 3D renderer, a dev server) for one output.
@@ -60,7 +78,7 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 ## The whole suite while iterating
 
-*Confirmed 2026-10-20, quick-tts.*
+*Confirmed 2026-10-20, an Electron app's end-to-end harness.*
 
 - **Signal:** e2e or unit suites run many times per session, each at full length.
 - **Cause:** the repository's agent docs say to run everything after each change.
@@ -74,4 +92,4 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 ## Not latency: waiting on the user
 
-`Waiting on you` is time the user took to answer a question or an approval prompt. Report it apart from tool time. It points at approval prompts worth replacing with rules, not at slow tools.
+`Waiting on you` is time the user took to answer a question or an approval prompt. Report it on its own line, outside the waste range: it describes how the machine is used (agents left running while nobody watches), not a slow tool. Where it comes from prompts the user never needed to see, an allow rule removes them; rank that fix with its hours marked as user wait.
