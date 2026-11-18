@@ -5,6 +5,7 @@
 // The kept ticket takes the highest severity of its group, the union of repos/related keys, and "both" platform when
 // desktop and mobile reports merge; absorbed findings survive as also_observed (steps + evidence) for the filing script.
 // Merges chain: { "A": ["B"], "B": ["C"] } keeps A and absorbs B and C. A cycle, or one id absorbed by two keeps, is an error.
+// A related_new pair naming an absorbed id links its kept ticket instead; a pair inside one merged group is dropped.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const [ticketsPath, planPath, outPath] = process.argv.slice(2);
@@ -29,9 +30,15 @@ for (const start of keptBy.keys()) {
   }
 }
 const absorbed = new Set(keptBy.keys());
+const keptId = (id) => (keptBy.has(id) ? keptId(keptBy.get(id)) : id);
 const groupOf = (id) => [...new Set(MERGES[id] || [])].flatMap((child) => [child, ...groupOf(child)]);
 for (const id of [...Object.keys(MERGES), ...absorbed, ...Object.keys(TITLES), ...RELATED.flat()]) {
   if (!byId[id]) throw new Error(`plan names unknown finding id ${id}`);
+}
+const pairs = new Map();
+for (const p of RELATED) {
+  const [a, b] = p.map(keptId).sort();
+  if (a !== b) pairs.set(`${a}|${b}`, [a, b]);
 }
 const platformOf = (all) => {
   const p = new Set(all.map((x) => x.platform));
@@ -52,7 +59,7 @@ const out = tickets.filter((t) => !absorbed.has(t.id)).map((t) => {
     related_existing: [...new Set(all.flatMap((x) => x.related_existing || []))],
     also_observed: [...(t.also_observed || []), ...group.flatMap((g) => [
       { id: g.id, area: g.area, title: g.title, actual: g.actual, steps: g.steps, evidence: g.evidence }, ...(g.also_observed || [])])],
-    related_new: RELATED.filter((p) => p.includes(t.id)).map((p) => p.find((x) => x !== t.id)),
+    related_new: [...pairs.values()].filter((p) => p.includes(t.id)).map((p) => p.find((x) => x !== t.id)),
   };
 });
 writeFileSync(outPath, JSON.stringify(out, null, 1));

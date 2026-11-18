@@ -183,12 +183,15 @@ ${JSON.stringify(compact, null, 1)}`, opts('triage', { label: 'triage', phase: '
 const dropped = new Map(decisions.drop.map(d => [d.id, d.reason]))
 // Merges chain (A absorbs B, B absorbs C: A files with B and C). A merge that would form a cycle, absorb a finding
 // twice or name an unknown id is skipped and reported, because throwing here would discard every agent's result.
+// A merge into a dropped finding is skipped too, so the absorbed finding files as its own ticket instead of vanishing.
 const keptBy = new Map()
 const topOf = id => { while (keptBy.has(id)) id = keptBy.get(id); return id }
 const rejectedMerges = []
 for (const m of decisions.merge) for (const id of m.absorb) {
   if (id === m.keep) continue
   const why = !byId[m.keep] || !byId[id] ? 'names an id that is not a confirmed finding'
+    : dropped.has(id) ? `${id} was dropped in triage`
+    : dropped.has(m.keep) ? `${m.keep} was dropped in triage (${dropped.get(m.keep)}); ${id} stays a ticket`
     : keptBy.has(id) ? `${id} is already absorbed into ${keptBy.get(id)}`
     : topOf(m.keep) === id ? `cycle: ${m.keep} is already absorbed into ${id}`
     : ''

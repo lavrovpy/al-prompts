@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Signs a test user into an agent-browser session with a Clerk sign-in token (ticket strategy); "anon" signs out.
 # Usage: clerk-signin.sh <session> <user|anon> [start-path]   (agents call it through the qa-signin wrapper, SKILL.md step 3)
-# Env: QA_BASE_URL (e.g. http://localhost:3100), CLERK_SECRET_KEY, QA_USERS (JSON file {"qa_owner": "user_…", …})
+# Env: QA_BASE_URL (e.g. http://localhost:3100), CLERK_SECRET_KEY, QA_USERS (JSON file {"qa_owner": "user_…", …}),
+#      QA_AB (browser command, default agent-browser; SKILL.md step 3 says when to change it)
 # Exits non-zero with Clerk's or the browser's message unless the session ends signed in as that user (or signed out).
 set -euo pipefail
 SESSION="$1"; WHO="$2"; START="${3:-/}"
 BASE="${QA_BASE_URL:?set QA_BASE_URL}"
-AB="agent-browser --session $SESSION"
+AB="${QA_AB:-agent-browser} --session $SESSION"
 $AB open "$BASE/" >/dev/null
 $AB wait --load networkidle >/dev/null 2>&1 || true
 WAIT_CLERK="for (let i = 0; i < 75 && !(window.Clerk && window.Clerk.loaded); i++) await new Promise(r => setTimeout(r, 200)); if (!(window.Clerk && window.Clerk.loaded)) return 'clerk-not-loaded';"

@@ -41,7 +41,7 @@ Sign a browser session in with:
 
 ## Browser
 
-- Use `agent-browser` only, always with your own `--session <name>` (given in your charter). Close your session when done; never close other sessions. `agent-browser skills get core` has the command reference.
+- Use `<browser command: agent-browser, or the one QA_AB names in the qa-signin wrapper>` only, always with your own `--session <name>` (given in your charter); every session has its own cookie jar, so test users never sign each other out. Close your session when done; never close other sessions. `agent-browser skills get core` has the command reference.
 - Desktop: `set viewport 1440 900`. Mobile: `set device "iPhone 14"` (also `"Pixel 7"`, `"iPhone SE"`); confirm with `eval "innerWidth"`.
 - Useful: `snapshot -i -c` (refs, compact), `screenshot [--full] [--annotate] <path>`, `errors`, `console`, `network requests --filter …`, `network route <url> --abort`, `set offline on|off`, `eval <js>`.
 

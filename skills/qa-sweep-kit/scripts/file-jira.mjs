@@ -5,7 +5,9 @@
 //      JIRA_PROJECT (key), QA_LABEL (corpus label), QA_BUILD (e.g. "web origin/main abc1234"),
 //      QA_PERSONAS (optional JSON file: {"user_name": "plain-words description"}), QA_CONVERTED_DIR (mp4 cache).
 // The ledger records each finding's issue key, uploaded attachments and links, so a rerun picks up where the last one
-// stopped without filing or uploading anything twice. Exits 1 when a ticket had no evidence file or a link failed.
+// stopped without filing or uploading anything twice. Each issue also carries the label qa-id-<finding id>, so an issue
+// created just before a crash, and not yet in the ledger, is found by search on rerun instead of filed again.
+// Exits 1 when a ticket had no evidence file or a link failed. --dry-run needs only QA_LABEL.
 import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, renameSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -18,13 +20,15 @@ const ONLY = flag("--only")?.split(",");
 const DRY = rest.includes("--dry-run");
 
 const need = (k) => process.env[k] || (() => { throw new Error(`set ${k}`); })();
-const SITE = need("JIRA_SITE");
-const EMAIL = need("JIRA_EMAIL");
-const PROJECT = need("JIRA_PROJECT");
 const LABEL = need("QA_LABEL");
-const TOKEN = readFileSync(process.env.JIRA_TOKEN_FILE, "utf8").trim();
-const AUTH = "Basic " + Buffer.from(`${EMAIL}:${TOKEN}`).toString("base64");
-const BUILD = need("QA_BUILD");
+let SITE, PROJECT, BUILD, AUTH;
+if (!DRY) {
+  SITE = need("JIRA_SITE");
+  PROJECT = need("JIRA_PROJECT");
+  BUILD = need("QA_BUILD");
+  const token = readFileSync(need("JIRA_TOKEN_FILE"), "utf8").trim();
+  AUTH = "Basic " + Buffer.from(`${need("JIRA_EMAIL")}:${token}`).toString("base64");
+}
 const CONVERTED = process.env.QA_CONVERTED_DIR || "/tmp/qa-sweep-converted";
 mkdirSync(CONVERTED, { recursive: true });
 
@@ -167,8 +171,10 @@ for (const t of tickets) {
   if (!present.length) { skipped.push(t.id); console.error(`SKIP ${t.id}: no evidence file exists (${unusable.join(", ")})`); continue; }
   if (unusable.length) console.error(`  ${t.id}: leaving out missing or empty evidence: ${unusable.join(", ")}`);
   t.evidence = (t.evidence || []).filter(usable);
+  const idLabel = `qa-id-${t.id}`;
   const labels = [
     LABEL,
+    idLabel,
     ...(t.repos || []).map((r) => `repo-${r}`),
     `area-${t.area}`,
     t.category,
@@ -178,6 +184,11 @@ for (const t of tickets) {
   if (DRY) { console.log(JSON.stringify({ id: t.id, title: t.title, type: t.issue_type, labels, files: present.map((e) => uploadName(e.path)) })); filed++; continue; }
 
   const entry = (ledger[t.id] ??= { title: t.title });
+  if (!entry.key) {
+    const { issues } = await ok(await jira("POST", "/rest/api/3/search/jql", { jql: `project = "${PROJECT}" AND labels = "${idLabel}"`, fields: ["key"], maxResults: 2 }), `search ${idLabel}`);
+    if (issues.length > 1) console.error(`  ${t.id}: ${issues.length} issues carry ${idLabel}; using ${issues[0].key}`);
+    if (issues.length) { entry.key = issues[0].key; save(); }
+  }
   if (!entry.key) {
     const fields = { project: { key: PROJECT }, issuetype: { name: t.issue_type }, summary: t.title.slice(0, 254), labels };
     let res = await jira("POST", "/rest/api/3/issue", { fields: { ...fields, priority: { name: PRIORITY[t.severity] } } });
